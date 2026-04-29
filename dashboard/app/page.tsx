@@ -229,8 +229,17 @@ export default function DashboardPage() {
         if (!res.ok) throw new Error('not ok');
         const agentsData = await res.json();
         if (cancelled) return;
-        if (Array.isArray(agentsData) && agentsData.length > 0) {
-          setAgents(agentsData);
+        const agentsList = agentsData.agents || agentsData;
+        if (Array.isArray(agentsList) && agentsList.length > 0) {
+          setAgents(agentsList.map((a: any) => ({
+            id: a.id,
+            type: a.type,
+            earnings: a.totalEarnings ?? a.earnings ?? 0,
+            reputation: a.reputation ?? 0,
+            tier: a.tier ?? 'New',
+            completedTasks: a.completedTasks ?? 0,
+            currentPrice: a.currentPrice ?? 0,
+          })));
         }
         // Also try to load economy metrics
         try {
@@ -238,8 +247,13 @@ export default function DashboardPage() {
           if (ecoRes.ok) {
             const ecoData = await ecoRes.json();
             if (!cancelled) {
-              setMetrics(ecoData);
-              setSpent(ecoData.totalVolume ?? DEMO_METRICS.totalVolume);
+              const m = ecoData.metrics || ecoData;
+              setMetrics({
+                ...DEMO_METRICS,
+                ...m,
+                coordinatorAccuracy: ecoData.coordinatorAccuracy || m.coordinatorAccuracy || DEMO_METRICS.coordinatorAccuracy,
+              });
+              setSpent(m.totalVolume ?? DEMO_METRICS.totalVolume);
             }
           }
         } catch { /* ignore, keep demo metrics */ }

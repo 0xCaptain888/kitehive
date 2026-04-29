@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { EconomyGraph } from '@/components/EconomyGraph';
 import { NegotiationLog } from '@/components/NegotiationLog';
 import { AgentLeaderboard } from '@/components/AgentLeaderboard';
@@ -10,7 +10,7 @@ import { TaskInput } from '@/components/TaskInput';
 import { TaskOutput } from '@/components/TaskOutput';
 import { UserFeedback } from '@/components/UserFeedback';
 
-// Mock data types
+// Types
 interface Agent {
   id: string;
   type: string;
@@ -64,23 +64,14 @@ interface Payment {
   timestamp: number;
 }
 
-// Initial mock data — represents 72h of economy history
-const MOCK_AGENTS: Agent[] = [
-  { id: 'research-agent-a', type: 'research', earnings: 12.50, reputation: 420, tier: 'Trusted', completedTasks: 47, currentPrice: 0.55 },
-  { id: 'writer-agent-a', type: 'writing', earnings: 8.30, reputation: 380, tier: 'Established', completedTasks: 35, currentPrice: 0.35 },
-  { id: 'writer-agent-b', type: 'writing', earnings: 3.10, reputation: 290, tier: 'Growing', completedTasks: 18, currentPrice: 0.25 },
-  { id: 'external-api', type: 'external_api', earnings: 1.80, reputation: 450, tier: 'Trusted', completedTasks: 22, currentPrice: 0.10 },
-];
-
-// MOCK_METRICS placeholder
-const MOCK_METRICS: EconomyMetrics = {
-  giniCoefficient: 0.38,
-  marketEfficiency: 0.72,
-  explorationRate: 0.18,
-  priceVolatility24h: 14.2,
-  totalTransactions: 122,
-  totalVolume: 25.70,
-  activeAgents: 4,
+const INITIAL_METRICS: EconomyMetrics = {
+  giniCoefficient: 0,
+  marketEfficiency: 0,
+  explorationRate: 0,
+  priceVolatility24h: 0,
+  totalTransactions: 0,
+  totalVolume: 0,
+  activeAgents: 0,
 };
 
 const PRESET_TASKS = [
@@ -90,19 +81,60 @@ const PRESET_TASKS = [
 ];
 
 export default function DashboardPage() {
-  const [agents, setAgents] = useState<Agent[]>(MOCK_AGENTS);
-  const [metrics, setMetrics] = useState<EconomyMetrics>(MOCK_METRICS);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [metrics, setMetrics] = useState<EconomyMetrics>(INITIAL_METRICS);
   const [negotiationLog, setNegotiationLog] = useState<NegotiationEntry[]>([]);
   const [taskResult, setTaskResult] = useState<TaskResult | null>(null);
-  const [trustEvents, setTrustEvents] = useState<TrustEvent[]>([
-    { agent: 'writer-agent-a', oldTier: 'Growing', newTier: 'Established', budgetChange: '$10 \u2192 $20', timestamp: Date.now() - 86400000 },
-    { agent: 'research-agent-a', oldTier: 'Established', newTier: 'Trusted', budgetChange: '$20 \u2192 $50', timestamp: Date.now() - 43200000 },
-  ]);
+  const [trustEvents, setTrustEvents] = useState<TrustEvent[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [budget] = useState(10.0);
-  const [spent, setSpent] = useState(MOCK_METRICS.totalVolume);
+  const [spent, setSpent] = useState(0);
   const [feedbackTaskId, setFeedbackTaskId] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Load agent registry on mount
+  const loadAgents = useCallback(async () => {
+    try {
+      const res = await fetch('/api/agents');
+      const data = await res.json();
+      if (data.agents) {
+        setAgents(
+          data.agents.map((a: any) => ({
+            id: a.id,
+            type: a.type,
+            earnings: a.totalEarnings ?? a.earnings ?? 0,
+            reputation: a.reputation ?? 0,
+            tier: a.tier ?? 'New',
+            completedTasks: a.completedTasks ?? 0,
+            currentPrice: a.currentPrice ?? 0,
+          })),
+        );
+      }
+    } catch (err) {
+      console.error('Failed to load agents:', err);
+    }
+  }, []);
+
+  // Fetch economy metrics
+  const fetchEconomy = useCallback(async () => {
+    try {
+      const res = await fetch('/api/economy');
+      const data = await res.json();
+      if (data.metrics) {
+        setMetrics(data.metrics);
+        setSpent(data.metrics.totalVolume ?? 0);
+      }
+    } catch (err) {
+      console.error('Failed to load economy:', err);
+    }
+  }, []);
+
+  // Load initial data on mount
+  useEffect(() => {
+    loadAgents();
+    fetchEconomy();
+  }, [loadAgents, fetchEconomy]);
 
   const addLogEntry = useCallback((entry: Omit<NegotiationEntry, 'id' | 'timestamp'>) => {
     setNegotiationLog((prev) => [
@@ -111,108 +143,158 @@ export default function DashboardPage() {
     ]);
   }, []);
 
-  const simulateTask = useCallback(async (taskDescription: string) => {
+  // Handle individual SSE events
+  const handleSSEEvent = useCallback((event: string, data: any) => {
+    switch (event) {
+      case 'log':
+        setNegotiationLog((prev) => [
+          ...prev,
+          {
+            id: `log-${Date.now()}-${Math.random()}`,
+            timestamp: Date.now(),
+            type: data.type || 'decomposition',
+            message: data.message || '',
+            agentId: data.agentId,
+          },
+        ]);
+        break;
+
+      case 'payment':
+        setPayments((prev) => [
+          ...prev,
+          {
+            from: data.from,
+            to: data.to,
+            amount: data.amount,
+            timestamp: Date.now(),
+          },
+        ]);
+        break;
+
+      case 'result':
+        setTaskResult({
+          taskId: data.taskId,
+          content: data.content,
+          qualityScore: data.qualityScore,
+          costBreakdown: data.costBreakdown,
+          totalCost: data.totalCost,
+          attestationTxHash: data.attestationTxHash,
+          completedAt: data.completedAt,
+        });
+        setFeedbackTaskId(data.taskId);
+        break;
+
+      case 'state_update':
+        if (data.agents) {
+          setAgents(
+            data.agents.map((a: any) => ({
+              id: a.id,
+              type: a.type,
+              earnings: a.earnings ?? 0,
+              reputation: a.reputation ?? 0,
+              tier: a.tier ?? 'New',
+              completedTasks: a.completedTasks ?? 0,
+              currentPrice: a.currentPrice ?? 0,
+            })),
+          );
+        }
+        if (data.metrics) {
+          setMetrics(data.metrics);
+          setSpent(data.metrics.totalVolume ?? 0);
+        }
+        if (data.trustEvents) {
+          setTrustEvents(data.trustEvents);
+        }
+        break;
+
+      case 'trust_lifecycle':
+        setTrustEvents((prev) => [...prev, data]);
+        break;
+
+      case 'done':
+        // Stream completed -- isRunning will be set to false in finally block
+        break;
+
+      case 'error':
+        setNegotiationLog((prev) => [
+          ...prev,
+          {
+            id: `err-${Date.now()}`,
+            timestamp: Date.now(),
+            type: 'error',
+            message: data.message || 'Unknown error',
+          },
+        ]);
+        break;
+    }
+  }, []);
+
+  // Run task via SSE stream from POST /api/task
+  const runTask = useCallback(async (taskDescription: string) => {
     if (isRunning) return;
+
+    // Abort any previous stream
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsRunning(true);
     setTaskResult(null);
     setNegotiationLog([]);
 
-    // Step 1: Task decomposition
-    addLogEntry({ type: 'decomposition', message: `Decomposing task: "${taskDescription}"` });
-    await delay(800);
-    addLogEntry({ type: 'decomposition', message: 'SubTask 1 \u2192 Research Agent: Collect data and analyze' });
-    addLogEntry({ type: 'decomposition', message: 'SubTask 2 \u2192 Writer Agent: Synthesize into report' });
-    await delay(600);
+    try {
+      const res = await fetch('/api/task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task: taskDescription }),
+        signal: controller.signal,
+      });
 
-    // Step 2: RFQ broadcast
-    addLogEntry({ type: 'rfq', message: 'Broadcasting RFQ to all registered agents...' });
-    await delay(500);
+      if (!res.ok || !res.body) {
+        addLogEntry({ type: 'error', message: `API error: ${res.status} ${res.statusText}` });
+        setIsRunning(false);
+        return;
+      }
 
-    const researchQuote = 0.45 + Math.random() * 0.2;
-    const writerAQuote = 0.30 + Math.random() * 0.1;
-    const writerBQuote = 0.20 + Math.random() * 0.1;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-    addLogEntry({ type: 'rfq', message: `research-agent-a quotes $${researchQuote.toFixed(2)} (latency: 8s, confidence: 0.84)`, agentId: 'research-agent-a' });
-    addLogEntry({ type: 'rfq', message: `writer-agent-a quotes $${writerAQuote.toFixed(2)} (latency: 6s, confidence: 0.76)`, agentId: 'writer-agent-a' });
-    addLogEntry({ type: 'rfq', message: `writer-agent-b quotes $${writerBQuote.toFixed(2)} (latency: 7s, confidence: 0.58)`, agentId: 'writer-agent-b' });
-    await delay(400);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-    // Step 3: Thompson Sampling selection
-    const isExploration = Math.random() < 0.2;
-    const selectedWriter = isExploration ? 'writer-agent-b' : 'writer-agent-a';
-    const selectedWriterPrice = isExploration ? writerBQuote : writerAQuote;
-    const mode = isExploration ? 'EXPLORATION' : 'EXPLOITATION';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        // Keep the last potentially incomplete line in the buffer
+        buffer = lines.pop() || '';
 
-    addLogEntry({
-      type: 'selection',
-      message: `[${mode}] Research: research-agent-a selected \u2014 sampled quality 0.${Math.floor(750 + Math.random() * 200)}, price $${researchQuote.toFixed(2)}`,
-      agentId: 'research-agent-a',
-    });
-    addLogEntry({
-      type: 'selection',
-      message: `[${mode}] Writing: ${selectedWriter} selected \u2014 sampled quality 0.${Math.floor(500 + Math.random() * 400)}, price $${selectedWriterPrice.toFixed(2)}`,
-      agentId: selectedWriter,
-    });
-    await delay(300);
-
-    // Step 4: Payment
-    const apiCost = 0.10;
-    addLogEntry({ type: 'payment', message: `x402 payment $${researchQuote.toFixed(2)} \u2192 research-agent-a`, agentId: 'research-agent-a' });
-    setPayments((prev) => [...prev, { from: 'coordinator', to: 'research-agent-a', amount: researchQuote, timestamp: Date.now() }]);
-    await delay(2000);
-
-    addLogEntry({ type: 'payment', message: `x402 payment $${selectedWriterPrice.toFixed(2)} \u2192 ${selectedWriter}`, agentId: selectedWriter });
-    setPayments((prev) => [...prev, { from: 'coordinator', to: selectedWriter, amount: selectedWriterPrice, timestamp: Date.now() }]);
-    await delay(2000);
-
-    addLogEntry({ type: 'payment', message: `x402 payment $${apiCost.toFixed(2)} \u2192 external-api`, agentId: 'external-api' });
-    setPayments((prev) => [...prev, { from: 'coordinator', to: 'external-api', amount: apiCost, timestamp: Date.now() }]);
-    await delay(1500);
-
-    const totalCost = researchQuote + selectedWriterPrice + apiCost;
-
-    // Step 5: Quality & Attestation
-    const qualityScore = 3 + Math.floor(Math.random() * 3); // 3-5
-    const txHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-
-    addLogEntry({ type: 'attestation', message: `Quality score: ${qualityScore}/5 \u2014 Attestation created on-chain` });
-    addLogEntry({ type: 'attestation', message: `Tx: ${txHash.slice(0, 18)}...${txHash.slice(-8)}` });
-
-    // Update agent stats
-    setAgents((prev) =>
-      prev.map((a) => {
-        if (a.id === 'research-agent-a') return { ...a, earnings: a.earnings + researchQuote, completedTasks: a.completedTasks + 1 };
-        if (a.id === selectedWriter) return { ...a, earnings: a.earnings + selectedWriterPrice, completedTasks: a.completedTasks + 1 };
-        if (a.id === 'external-api') return { ...a, earnings: a.earnings + apiCost, completedTasks: a.completedTasks + 1 };
-        return a;
-      })
-    );
-
-    setSpent((prev) => prev + totalCost);
-    setMetrics((prev) => ({
-      ...prev,
-      totalTransactions: prev.totalTransactions + 3,
-      totalVolume: prev.totalVolume + totalCost,
-    }));
-
-    const taskId = `task-${Date.now()}`;
-    setTaskResult({
-      taskId,
-      content: `## ${taskDescription}\n\n### Executive Summary\nBased on comprehensive research and analysis, here are the key findings...\n\n### Key Findings\n- Finding 1: Market analysis indicates strong growth potential\n- Finding 2: Competitive landscape shows differentiation opportunities\n- Finding 3: Technical infrastructure supports scalability\n\n### Comparison Table\n| Feature | Kite AI | Competitor A | Competitor B |\n|---------|---------|-------------|-------------|\n| TPS | 10,000+ | 5,000 | 2,000 |\n| Settlement | Instant | 2-5 min | 10+ min |\n| Agent Support | Native | Limited | None |\n\n### SWOT Analysis\n**Strengths:** Native agent economy, x402 protocol, AA SDK\n**Weaknesses:** Early ecosystem, limited agent diversity\n**Opportunities:** Growing AI agent market, cross-chain expansion\n**Threats:** Competing L1s, regulatory uncertainty\n\n### Recommendations\n1. Continue deepening agent infrastructure\n2. Focus on developer experience and documentation\n3. Build strategic partnerships with AI frameworks`,
-      qualityScore,
-      costBreakdown: [
-        { agentId: 'research-agent-a', cost: researchQuote },
-        { agentId: selectedWriter, cost: selectedWriterPrice },
-        { agentId: 'external-api', cost: apiCost },
-      ],
-      totalCost,
-      attestationTxHash: txHash,
-      completedAt: new Date().toISOString(),
-    });
-
-    setFeedbackTaskId(taskId);
-    setIsRunning(false);
-  }, [isRunning, addLogEntry]);
+        let currentEvent = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ') && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              handleSSEEvent(currentEvent, data);
+            } catch {
+              // skip malformed JSON
+            }
+            currentEvent = '';
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        addLogEntry({ type: 'error', message: `Stream error: ${err.message}` });
+      }
+    } finally {
+      setIsRunning(false);
+      // Refresh economy data after task completes
+      fetchEconomy();
+      loadAgents();
+    }
+  }, [isRunning, addLogEntry, fetchEconomy, loadAgents, handleSSEEvent]);
 
   return (
     <div className="max-w-[1600px] mx-auto p-4">
@@ -221,7 +303,7 @@ export default function DashboardPage() {
         <div className="col-span-3 space-y-4">
           <TaskInput
             presets={PRESET_TASKS}
-            onSubmit={simulateTask}
+            onSubmit={runTask}
             isRunning={isRunning}
             budget={budget}
             spent={spent}
@@ -259,8 +341,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

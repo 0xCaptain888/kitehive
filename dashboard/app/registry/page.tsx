@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface RegisteredAgent {
   id: string;
@@ -15,66 +15,8 @@ interface RegisteredAgent {
   status: 'online' | 'offline' | 'busy';
   registeredAt: string;
   capabilities: string[];
+  protocols?: string[];
 }
-
-const MOCK_REGISTRY: RegisteredAgent[] = [
-  {
-    id: 'research-agent-a',
-    type: 'research',
-    endpoint: 'https://agents.kitehive.ai/research-a',
-    walletAddress: '0x1234...5678',
-    reputation: 420,
-    tier: 'Trusted',
-    totalEarnings: 12.50,
-    completedTasks: 47,
-    currentPrice: 0.55,
-    status: 'online',
-    registeredAt: '2026-04-26T08:00:00Z',
-    capabilities: ['web_search', 'data_analysis', 'competitive_research'],
-  },
-  {
-    id: 'writer-agent-a',
-    type: 'writing',
-    endpoint: 'https://agents.kitehive.ai/writer-a',
-    walletAddress: '0x2345...6789',
-    reputation: 380,
-    tier: 'Established',
-    totalEarnings: 8.30,
-    completedTasks: 35,
-    currentPrice: 0.35,
-    status: 'online',
-    registeredAt: '2026-04-26T08:00:00Z',
-    capabilities: ['report_writing', 'data_synthesis', 'competitive_analysis'],
-  },
-  {
-    id: 'writer-agent-b',
-    type: 'writing',
-    endpoint: 'https://agents.kitehive.ai/writer-b',
-    walletAddress: '0x3456...7890',
-    reputation: 290,
-    tier: 'Growing',
-    totalEarnings: 3.10,
-    completedTasks: 18,
-    currentPrice: 0.25,
-    status: 'online',
-    registeredAt: '2026-04-26T10:00:00Z',
-    capabilities: ['report_writing', 'summary', 'bullet_points'],
-  },
-  {
-    id: 'external-api',
-    type: 'external_api',
-    endpoint: 'https://agents.kitehive.ai/external',
-    walletAddress: '0x4567...8901',
-    reputation: 450,
-    tier: 'Trusted',
-    totalEarnings: 1.80,
-    completedTasks: 22,
-    currentPrice: 0.10,
-    status: 'online',
-    registeredAt: '2026-04-26T08:00:00Z',
-    capabilities: ['market_data', 'network_stats', 'pricing_data'],
-  },
-];
 
 function getTierColor(tier: string): string {
   switch (tier) {
@@ -94,8 +36,43 @@ function getStatusColor(status: string): string {
 }
 
 export default function RegistryPage() {
-  const [agents] = useState<RegisteredAgent[]>(MOCK_REGISTRY);
+  const [agents, setAgents] = useState<RegisteredAgent[]>([]);
   const [registerUrl, setRegisterUrl] = useState('');
+  const [registerType, setRegisterType] = useState('research');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    fetch('/api/agents')
+      .then(res => res.json())
+      .then(data => setAgents(data.agents || []))
+      .catch(() => {});
+  }, []);
+
+  const handleRegister = async () => {
+    if (!registerUrl.trim()) return;
+    setIsRegistering(true);
+    setMessage('');
+    try {
+      const res = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: registerUrl, type: registerType, capabilities: [] }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAgents(prev => [...prev, data.agent]);
+        setRegisterUrl('');
+        setMessage(data.message);
+      } else {
+        setMessage(data.error || 'Registration failed');
+      }
+    } catch {
+      setMessage('Network error');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto p-6">
@@ -122,13 +99,30 @@ export default function RegistryPage() {
             placeholder="Enter x402 endpoint URL (e.g., https://your-agent.com)"
             className="flex-1 bg-background border border-surface-light rounded-lg px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-primary"
           />
-          <button className="bg-primary/20 text-primary border border-primary/30 rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/30 transition">
-            Register Agent
+          <select
+            value={registerType}
+            onChange={(e) => setRegisterType(e.target.value)}
+            className="bg-background border border-surface-light rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-primary"
+          >
+            <option value="research">Research</option>
+            <option value="writing">Writing</option>
+            <option value="external_api">External API</option>
+          </select>
+          <button
+            onClick={handleRegister}
+            disabled={isRegistering || !registerUrl.trim()}
+            className="bg-primary/20 text-primary border border-primary/30 rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/30 transition disabled:opacity-50"
+          >
+            {isRegistering ? 'Registering...' : 'Register Agent'}
           </button>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          Your agent must implement the x402 protocol (POST /quote, POST /execute, GET /health)
+          Your agent must implement the x402 protocol (POST /quote, POST /execute, GET /health).
+          Discovery via ksearch is enabled automatically upon registration.
         </p>
+        {message && (
+          <p className="text-xs text-accent-green mt-2">{message}</p>
+        )}
       </div>
 
       {/* Agent cards */}

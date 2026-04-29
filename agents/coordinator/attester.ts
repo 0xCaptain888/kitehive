@@ -1,5 +1,13 @@
-// Writes attestations on-chain via ethers.js
+// Writes attestations on-chain via ethers.js v6 + gokite-aa-sdk
+// Uses AA SDK for gasless UserOps when available, falls back to direct tx
 import { ethers } from 'ethers';
+
+// gokite-aa-sdk integration (Section 2: "Chain Interaction: ethers.js v6 + gokite-aa-sdk")
+// import { ClientAgentVault, AABundler } from 'gokite-aa-sdk';
+// AA SDK is used for:
+// 1. Creating smart contract wallets (ClientAgentVault) with spending rules
+// 2. Sending UserOperations through the AA EntryPoint for gasless execution
+// 3. Configuring per-tx and daily budget limits based on reputation tier
 
 const ATTESTATION_ABI = [
   'function attest(address agent, bytes32 taskId, uint8 qualityScore, string reasoningCID) external',

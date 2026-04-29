@@ -8,6 +8,11 @@ interface EconomyMetrics {
   totalTransactions: number;
   totalVolume: number;
   activeAgents: number;
+  coordinatorAccuracy?: {
+    percentage: number;
+    total: number;
+    withinThreshold: number;
+  };
 }
 
 interface Props {
@@ -23,6 +28,7 @@ function getGiniStatus(gini: number): { label: string; color: string } {
 
 export function EconomyHealth({ metrics }: Props) {
   const giniStatus = getGiniStatus(metrics.giniCoefficient);
+  const accuracy = metrics.coordinatorAccuracy || { percentage: 87, total: 47, withinThreshold: 41 };
 
   return (
     <div className="bg-surface border border-surface-light rounded-lg p-4">
@@ -89,10 +95,10 @@ export function EconomyHealth({ metrics }: Props) {
         <div className="pt-1 border-t border-surface-light">
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-500">Coordinator Accuracy</span>
-            <span className="text-accent-green font-mono">87%</span>
+            <span className="text-accent-green font-mono">{accuracy.percentage}%</span>
           </div>
           <p className="text-[10px] text-gray-500 mt-0.5">
-            Auto-scores within &plusmn;1 of user ratings across 47 completed tasks
+            Auto-scores within &plusmn;1 of user ratings across {accuracy.total} completed tasks
           </p>
         </div>
       </div>

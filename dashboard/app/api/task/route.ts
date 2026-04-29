@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { decomposeTaskWithLLM, explainDecision } from '@/lib/llm';
 
 // In-memory state (in production, use a database)
 const agentState = {
@@ -297,11 +298,11 @@ export async function POST(request: NextRequest) {
       try {
         const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-        // Step 1: Task Decomposition
+        // Step 1: Task Decomposition via GPT-4o (falls back to templates if no API key)
         send('log', { type: 'decomposition', message: `Decomposing task: "${task}"` });
         await delay(600);
 
-        const decomposition = decomposeTask(task);
+        const decomposition = await decomposeTaskWithLLM(task);
         send('log', { type: 'decomposition', message: `Strategy: ${decomposition.reasoning}` });
         await delay(400);
 
@@ -366,10 +367,20 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          // LLM-style explanation
-          const explanation = result.isExploration
-            ? `${result.selected.id} has high uncertainty (bonus ${result.explorationBonus.toFixed(3)}). Thompson Sampling favors exploration to reduce uncertainty about this agent's true quality.`
-            : `${result.selected.id} has a proven track record. Sampled quality ${result.qualitySample.toFixed(3)} at $${result.selected.price.toFixed(2)} offers the best risk-adjusted value per dollar.`;
+          // LLM explains the decision (GPT-4o via Vercel AI SDK streamText — Section 4)
+          const explanation = await explainDecision({
+            selectedAgentId: result.selected.id,
+            qualitySample: result.qualitySample,
+            explorationBonus: result.explorationBonus,
+            isExploration: result.isExploration,
+            selectedPrice: result.selected.price,
+            candidates: result.allSamples.map(s => ({
+              id: s.agentId,
+              price: candidates.find(c => c.id === s.agentId)?.price || 0,
+              completedTasks: agentState.agents.find(a => a.id === s.agentId)?.completedTasks || 0,
+              sample: s.sample,
+            })),
+          });
           send('log', { type: 'selection', message: `  Reasoning: "${explanation}"` });
           await delay(400);
 

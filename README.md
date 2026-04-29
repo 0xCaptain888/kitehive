@@ -17,7 +17,7 @@ KiteHive is not an agent project — it is a **live agent economy** with price d
 ## 30-Second Quick Start
 
 ```bash
-git clone https://github.com/user/kitehive.git
+git clone https://github.com/0xCaptain888/kitehive.git
 cd kitehive
 npm install
 cp .env.example .env

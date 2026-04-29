@@ -1,0 +1,27 @@
+{
+  "name": "kitehive",
+  "version": "1.0.0",
+  "description": "Live AI Agent Economy on Kite Chain",
+  "private": true,
+  "scripts": {
+    "dev": "cd dashboard && npm run dev",
+    "build": "cd dashboard && npm run build",
+    "start": "cd dashboard && npm run start",
+    "test:contracts": "cd contracts && npm test",
+    "test:bandit": "npx ts-node agents/coordinator/bandit.test.ts",
+    "simulate": "npx ts-node scripts/simulate-economy.ts",
+    "deploy:testnet": "cd contracts && npm run deploy:testnet",
+    "deploy:mainnet": "cd contracts && npm run deploy:mainnet"
+  },
+  "keywords": ["kite", "ai-agents", "economy", "x402", "blockchain"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.0.0"
+  },
+  "dependencies": {
+    "openai": "^4.50.0",
+    "ethers": "^6.13.0"
+  }
+}

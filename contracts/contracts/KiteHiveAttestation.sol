@@ -33,7 +33,7 @@ contract KiteHiveAttestation {
         });
         uint256 old = totalTasks[agent];
         reputationScore[agent] =
-            (reputationScore[agent] * old + qualityScore * 100) / (old + 1);
+            (reputationScore[agent] * old + uint256(qualityScore) * 100) / (old + 1);
         totalTasks[agent] = old + 1;
         emit AttestationCreated(taskId, agent, qualityScore);
     }
@@ -51,7 +51,7 @@ contract KiteHiveAttestation {
         Attestation storage a = attestations[taskId];
         uint256 t = totalTasks[a.agent];
         reputationScore[a.agent] =
-            (reputationScore[a.agent] * t - a.qualityScore * 100 + newScore * 100) / t;
+            (reputationScore[a.agent] * t - uint256(a.qualityScore) * 100 + uint256(newScore) * 100) / t;
         a.qualityScore = newScore;
         disputed[taskId] = false;
         emit DisputeResolved(taskId, newScore);

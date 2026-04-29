@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   return Response.json({
     attestations: filtered,
     total: filtered.length,
-    contract: process.env.NEXT_PUBLIC_ATTESTATION_CONTRACT || '0x0000000000000000000000000000000000000000',
+    contract: process.env.NEXT_PUBLIC_ATTESTATION_CONTRACT || process.env.ATTESTATION_CONTRACT_ADDRESS || '0x7a0b21045Ff37f79095Ee338f9d6F2f303700046',
     explorer: process.env.NEXT_PUBLIC_KITE_EXPLORER || 'https://testnet.kitescan.ai',
     chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 2368),
   });

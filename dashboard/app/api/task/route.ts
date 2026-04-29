@@ -3,7 +3,7 @@ import { decomposeTaskWithLLM, explainDecision, generateAgentContent } from '@/l
 
 // === Env vars ===
 const KITE_PRIVATE_KEY = process.env.KITE_PRIVATE_KEY || '0x3295ce3f6f56f22e369d77eaaef764d302387d6d9cd548e243763747b82d20a6';
-const ATTESTATION_CONTRACT_ADDRESS = process.env.ATTESTATION_CONTRACT_ADDRESS || process.env.ATTESTATION_CONTRACT_TESTNET || '';
+const ATTESTATION_CONTRACT_ADDRESS = process.env.ATTESTATION_CONTRACT_ADDRESS || process.env.ATTESTATION_CONTRACT_TESTNET || process.env.NEXT_PUBLIC_ATTESTATION_CONTRACT || '0x7a0b21045Ff37f79095Ee338f9d6F2f303700046';
 const KITE_RPC_URL = process.env.KITE_RPC_URL || process.env.KITE_TESTNET_RPC || 'https://rpc-testnet.gokite.ai';
 
 // Minimal ABI for attestation write
@@ -15,10 +15,10 @@ const ATTESTATION_ABI = [
 // In-memory state (in production, use a database)
 const agentState = {
   agents: [
-    { id: 'research-agent-a', type: 'research', earnings: 12.50, reputation: 420, tier: 'Trusted', completedTasks: 47, currentPrice: 0.55, walletAddress: '0xRA1' },
-    { id: 'writer-agent-a', type: 'writing', earnings: 8.30, reputation: 380, tier: 'Established', completedTasks: 35, currentPrice: 0.35, walletAddress: '0xWA1' },
-    { id: 'writer-agent-b', type: 'writing', earnings: 3.10, reputation: 290, tier: 'Growing', completedTasks: 18, currentPrice: 0.25, walletAddress: '0xWB1' },
-    { id: 'external-api', type: 'external_api', earnings: 1.80, reputation: 450, tier: 'Trusted', completedTasks: 22, currentPrice: 0.10, walletAddress: '0xEA1' },
+    { id: 'research-agent-a', type: 'research', earnings: 12.50, reputation: 420, tier: 'Trusted', completedTasks: 47, currentPrice: 0.55, walletAddress: '0x1111111111111111111111111111111111111111' },
+    { id: 'writer-agent-a', type: 'writing', earnings: 8.30, reputation: 380, tier: 'Established', completedTasks: 35, currentPrice: 0.35, walletAddress: '0x2222222222222222222222222222222222222222' },
+    { id: 'writer-agent-b', type: 'writing', earnings: 3.10, reputation: 290, tier: 'Growing', completedTasks: 18, currentPrice: 0.25, walletAddress: '0x3333333333333333333333333333333333333333' },
+    { id: 'external-api', type: 'external_api', earnings: 1.80, reputation: 450, tier: 'Trusted', completedTasks: 22, currentPrice: 0.10, walletAddress: '0x4444444444444444444444444444444444444444' },
   ],
   metrics: {
     giniCoefficient: 0.38,

@@ -10,6 +10,10 @@ KiteHive is not an agent project — it is a **live agent economy** with price d
 
 **Dashboard:** [https://kitehive.vercel.app](https://kitehive.vercel.app)
 
+## Demo Video
+
+[Coming Soon — 3 min demo recording]
+
 ## 30-Second Quick Start
 
 ```bash

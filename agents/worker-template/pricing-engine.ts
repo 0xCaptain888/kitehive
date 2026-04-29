@@ -36,10 +36,11 @@ export class PricingEngine {
     this.reputationScore = Math.max(0, Math.min(500, score));
   }
 
-  generateQuote(taskComplexity: number): PriceQuote {
-    const loadMultiplier = 1 + this.currentLoad * 0.15;
-    const reputationMultiplier = 0.8 + (this.reputationScore / 500) * 0.4;
-    const complexityMultiplier = 0.5 + taskComplexity * 0.3;
+  generateQuote(task: { complexity?: number; description?: string } | number): PriceQuote {
+    const taskComplexity = typeof task === 'number' ? task : (task.complexity || 3);
+    const loadMultiplier = 1 + this.currentLoad * 0.15;               // busy → expensive
+    const reputationMultiplier = 0.8 + (this.reputationScore / 500) * 0.4;   // good rep → premium
+    const complexityMultiplier = estimateComplexity(taskComplexity);   // harder → more
 
     let price = this.config.basePrice * loadMultiplier * reputationMultiplier * complexityMultiplier;
     price = Math.max(this.config.minPrice, Math.min(this.config.maxPrice, price));
@@ -74,4 +75,11 @@ export class PricingEngine {
     const variance = prices.reduce((sum, p) => sum + (p - mean) ** 2, 0) / prices.length;
     return Math.round((Math.sqrt(variance) / mean) * 10000) / 100; // percentage
   }
+}
+
+// Estimate task complexity — used in dynamic pricing formula (Section 5.1)
+function estimateComplexity(complexity: number): number {
+  // Scale 1-5 complexity to a multiplier range
+  // Simple tasks (1) → 0.8x, Complex tasks (5) → 2.0x
+  return 0.5 + complexity * 0.3;
 }

@@ -88,7 +88,7 @@ function selectAgent(candidates: { id: string; price: number; estimatedLatency: 
     const arm = agentState.banditArms.get(c.id) || { alpha: 1, beta: 1 };
     const qualitySample = betaSample(arm.alpha, arm.beta);
     const expBonus = explorationBoost / Math.sqrt(arm.alpha + arm.beta);
-    const score = (qualitySample + expBonus * 0.1) / c.price;
+    const score = qualitySample / c.price;  // quality per dollar
     allSamples.push({ agentId: c.id, sample: qualitySample, score });
     if (score > bestScore) {
       bestScore = score;
@@ -398,11 +398,53 @@ export async function POST(request: NextRequest) {
           // Simulate agent execution time
           await delay(1200 + Math.random() * 800);
 
-          send('log', {
-            type: 'payment',
-            message: `${result.selected.id} completed ${subtask.id} — result received`,
-            agentId: result.selected.id,
-          });
+          // Quality Gate (Section 5.5): reject if qualityScore < 2, refund 90%, failover
+          const subtaskQuality = 1 + Math.floor(Math.random() * 5); // 1-5
+          if (subtaskQuality < 2) {
+            send('log', {
+              type: 'error',
+              message: `Quality gate FAILED for ${result.selected.id} on ${subtask.id} — score ${subtaskQuality}/5 (threshold: 2)`,
+              agentId: result.selected.id,
+            });
+            const refundAmount = Math.round(result.selected.price * 0.9 * 100) / 100;
+            send('log', {
+              type: 'payment',
+              message: `Partial refund $${refundAmount} (90%) for rejected result from ${result.selected.id}`,
+              agentId: result.selected.id,
+            });
+            // Find alternative agent
+            const alternatives = candidates.filter(c => c.id !== result.selected.id);
+            if (alternatives.length > 0) {
+              const alt = alternatives[0];
+              send('log', {
+                type: 'selection',
+                message: `Failover: routing ${subtask.id} to alternative agent ${alt.id}`,
+                agentId: alt.id,
+              });
+              send('log', {
+                type: 'payment',
+                message: `x402 payment $${alt.price.toFixed(2)} → ${alt.id} (failover)`,
+                agentId: alt.id,
+              });
+              costBreakdown.push({ agentId: alt.id, cost: alt.price });
+              // Adjust: subtract refund, add failover cost
+              costBreakdown[costBreakdown.length - 2].cost -= refundAmount;
+              payments.push({ from: 'coordinator', to: alt.id, amount: alt.price, timestamp: Date.now() });
+              send('payment', { from: 'coordinator', to: alt.id, amount: alt.price });
+              await delay(1000);
+            }
+            send('log', {
+              type: 'attestation',
+              message: `Attested ${result.selected.id} with quality ${subtaskQuality}/5 — status: rejected`,
+              agentId: result.selected.id,
+            });
+          } else {
+            send('log', {
+              type: 'payment',
+              message: `${result.selected.id} completed ${subtask.id} — quality ${subtaskQuality}/5 (passed gate)`,
+              agentId: result.selected.id,
+            });
+          }
           await delay(200);
         }
 

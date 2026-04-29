@@ -93,8 +93,8 @@ export class AgentBandit {
       }
 
       const qualitySample = betaSample(arm.alpha, arm.beta);
-      const explorationBonus = this.explorationBoost / Math.sqrt(arm.alpha + arm.beta);
-      const score = (qualitySample + explorationBonus * 0.1) / candidate.quote.price;
+      const explorationBonus = 1 / Math.sqrt(arm.alpha + arm.beta);
+      const score = qualitySample / candidate.quote.price;  // quality per dollar
 
       allSamples.push({ agentId: candidate.id, sample: qualitySample, score });
 
@@ -106,7 +106,7 @@ export class AgentBandit {
     }
 
     const arm = this.arms.get(selected.id)!;
-    const explorationBonus = this.explorationBoost / Math.sqrt(arm.alpha + arm.beta);
+    const explorationBonus = 1 / Math.sqrt(arm.alpha + arm.beta);
 
     return {
       selected,

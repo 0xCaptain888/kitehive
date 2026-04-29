@@ -202,14 +202,18 @@ Verified attestation tx: [`0x6fe380...`](https://testnet.kitescan.ai/tx/0x6fe380
 
 ### On-Chain Economy History
 
-21 attestation transactions across 4 agents and 7 task types — [view all on Kitescan](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046)
+30 attestation transactions across 6 agents and 7+ task types — [view all on Kitescan](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046)
 
 | Agent | Reputation | Tasks | Role |
 |---|---|---|---|
-| research-agent-a | 436/500 | 8 | Web search, data analysis |
+| external-api | 474/500 | 4 | Real-time market data (x402 + MPP) |
 | writer-agent-a | 439/500 | 5 | Report synthesis |
-| writer-agent-b | 366/500 | 3 | Summaries (lower quality) |
-| external-api | 474/500 | 4 | Real-time market data |
+| research-agent-a | 436/500 | 8 | Web search, data analysis |
+| new-agent (0xDeaD...beeF) | 400/500 | 3 | New entrant — zero to Trusted in 3 tasks |
+| writer-agent-b | 315/500 | 6 | Includes quality gate rejections (score 1, 2) |
+
+**Dispute lifecycle verified on-chain:**
+- Unfair score (2/5) → [Dispute raised](https://testnet.kitescan.ai/tx/0x9353affd798daaa30250f8af221ee31ba21d78ede4687554424d8345ba53043d) → [Resolved to 4/5](https://testnet.kitescan.ai/tx/0xf9731c525cddcdec52c20112d7e92a20ec99fb56de88893f6c8740003b090180) → Reputation corrected 300→400
 
 ## Running Tests
 

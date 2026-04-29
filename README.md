@@ -215,6 +215,16 @@ Verified attestation tx: [`0x6fe380...`](https://testnet.kitescan.ai/tx/0x6fe380
 **Dispute lifecycle verified on-chain:**
 - Unfair score (2/5) → [Dispute raised](https://testnet.kitescan.ai/tx/0x9353affd798daaa30250f8af221ee31ba21d78ede4687554424d8345ba53043d) → [Resolved to 4/5](https://testnet.kitescan.ai/tx/0xf9731c525cddcdec52c20112d7e92a20ec99fb56de88893f6c8740003b090180) → Reputation corrected 300→400
 
+**x402 USDT Payment Settlement:**
+15 real USDC transfers ($1.86 total) from Coordinator to agents — [view USDT contract](https://testnet.kitescan.ai/address/0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63)
+
+| Agent | USDT Earned | Tasks Paid |
+|---|---|---|
+| research-agent-a | $1.01 | 6 |
+| writer-agent-a | $0.52 | 4 |
+| writer-agent-b | $0.17 | 2 |
+| external-api | $0.16 | 3 |
+
 ## Running Tests
 
 ```bash

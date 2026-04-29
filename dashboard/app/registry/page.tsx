@@ -36,42 +36,46 @@ function getStatusColor(status: string): string {
 }
 
 export default function RegistryPage() {
-  const [agents, setAgents] = useState<RegisteredAgent[]>([]);
+  const [agents, setAgents] = useState<RegisteredAgent[]>([
+    { id: 'research-agent-a', type: 'research', endpoint: 'https://agents.kitehive.ai/research-a', walletAddress: '0x1a2b...ef01', reputation: 420, tier: 'Trusted', totalEarnings: 12.5, completedTasks: 47, currentPrice: 0.55, status: 'online', registeredAt: '2026-04-26T08:00:00Z', capabilities: ['web_search', 'data_analysis', 'competitive_research'], protocols: ['x402'] },
+    { id: 'writer-agent-a', type: 'writing', endpoint: 'https://agents.kitehive.ai/writer-a', walletAddress: '0x2b3c...0102', reputation: 380, tier: 'Established', totalEarnings: 8.3, completedTasks: 35, currentPrice: 0.35, status: 'online', registeredAt: '2026-04-26T08:00:00Z', capabilities: ['report_writing', 'data_synthesis', 'competitive_analysis'], protocols: ['x402'] },
+    { id: 'writer-agent-b', type: 'writing', endpoint: 'https://agents.kitehive.ai/writer-b', walletAddress: '0x3c4d...0203', reputation: 290, tier: 'Growing', totalEarnings: 3.1, completedTasks: 18, currentPrice: 0.25, status: 'online', registeredAt: '2026-04-26T10:00:00Z', capabilities: ['report_writing', 'summary', 'bullet_points'], protocols: ['x402'] },
+    { id: 'external-api', type: 'external_api', endpoint: 'https://agents.kitehive.ai/external', walletAddress: '0x4d5e...0304', reputation: 450, tier: 'Trusted', totalEarnings: 1.8, completedTasks: 22, currentPrice: 0.10, status: 'online', registeredAt: '2026-04-26T08:00:00Z', capabilities: ['market_data', 'network_stats', 'pricing_data'], protocols: ['x402', 'mpp'] },
+  ]);
   const [registerUrl, setRegisterUrl] = useState('');
   const [registerType, setRegisterType] = useState('research');
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch('/api/agents')
-      .then(res => res.json())
-      .then(data => setAgents(data.agents || []))
-      .catch(() => {});
+    // Static demo — agents pre-loaded
   }, []);
 
   const handleRegister = async () => {
     if (!registerUrl.trim()) return;
     setIsRegistering(true);
     setMessage('');
-    try {
-      const res = await fetch('/api/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: registerUrl, type: registerType, capabilities: [] }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAgents(prev => [...prev, data.agent]);
-        setRegisterUrl('');
-        setMessage(data.message);
-      } else {
-        setMessage(data.error || 'Registration failed');
-      }
-    } catch {
-      setMessage('Network error');
-    } finally {
-      setIsRegistering(false);
-    }
+    // Demo: simulate local registration
+    await new Promise((r) => setTimeout(r, 500));
+    const newAgent: RegisteredAgent = {
+      id: `agent-${Date.now().toString(36)}`,
+      type: registerType,
+      endpoint: registerUrl,
+      walletAddress: '0x' + Math.random().toString(16).slice(2, 10) + '...',
+      reputation: 100,
+      tier: 'New',
+      totalEarnings: 0,
+      completedTasks: 0,
+      currentPrice: 0.15,
+      status: 'online',
+      registeredAt: new Date().toISOString(),
+      capabilities: [registerType],
+      protocols: ['x402'],
+    };
+    setAgents((prev) => [...prev, newAgent]);
+    setRegisterUrl('');
+    setMessage(`Agent registered! Discoverable via ksearch. ID: ${newAgent.id}`);
+    setIsRegistering(false);
   };
 
   return (

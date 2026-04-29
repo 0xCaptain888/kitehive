@@ -1,8 +1,8 @@
 {
-  "address": "0x0000000000000000000000000000000000000000",
-  "txHash": "pending-deployment",
-  "blockNumber": null,
-  "deployer": "pending",
+  "address": "0x7a0b21045Ff37f79095Ee338f9d6F2f303700046",
+  "txHash": "0x59f56def8a0f3a1e426112c9b3f3288c00c85fcb50cf4fe0025209d21c76505b",
+  "blockNumber": 21108998,
+  "deployer": "0x11eAd46574e2BfCEe189707dA2d8F66a4711f1C8",
   "chainId": 2368,
-  "deployedAt": "pending"
+  "deployedAt": "2026-04-29T11:04:23.998Z"
 }

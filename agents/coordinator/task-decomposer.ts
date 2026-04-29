@@ -52,13 +52,16 @@ export class TaskDecomposer {
   private openai: OpenAI;
 
   constructor(apiKey: string) {
-    this.openai = new OpenAI({ apiKey });
+    this.openai = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.deepseek.com',
+    });
   }
 
   async decompose(task: string): Promise<DecompositionResult> {
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: DECOMPOSITION_PROMPT },
           { role: 'user', content: task },
@@ -123,7 +126,7 @@ export class TaskDecomposer {
 
   async *decomposeStreaming(task: string): AsyncGenerator<string> {
     const stream = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'deepseek-chat',
       messages: [
         { role: 'system', content: DECOMPOSITION_PROMPT },
         { role: 'user', content: task },

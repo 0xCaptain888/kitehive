@@ -20,7 +20,10 @@ export class DecisionExplainer {
   private openai: OpenAI;
 
   constructor(apiKey: string) {
-    this.openai = new OpenAI({ apiKey });
+    this.openai = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.deepseek.com',
+    });
   }
 
   async explain(context: DecisionContext): Promise<string> {
@@ -45,7 +48,7 @@ Write 2 sentences explaining why this agent was selected, noting whether this wa
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'deepseek-chat',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.5,
         max_tokens: 200,
@@ -70,7 +73,7 @@ Candidates:\n${candidateList}
 Write 2 sentences explaining the selection decision.`;
 
     const stream = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'deepseek-chat',
       messages: [{ role: 'user', content: prompt }],
       stream: true,
       temperature: 0.5,

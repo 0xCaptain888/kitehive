@@ -1,5 +1,16 @@
 import { NextRequest } from 'next/server';
-import { decomposeTaskWithLLM, explainDecision } from '@/lib/llm';
+import { decomposeTaskWithLLM, explainDecision, generateAgentContent } from '@/lib/llm';
+
+// === Env vars ===
+const KITE_PRIVATE_KEY = process.env.KITE_PRIVATE_KEY || '0x3295ce3f6f56f22e369d77eaaef764d302387d6d9cd548e243763747b82d20a6';
+const ATTESTATION_CONTRACT_ADDRESS = process.env.ATTESTATION_CONTRACT_ADDRESS || process.env.ATTESTATION_CONTRACT_TESTNET || '';
+const KITE_RPC_URL = process.env.KITE_RPC_URL || process.env.KITE_TESTNET_RPC || 'https://rpc-testnet.gokite.ai';
+
+// Minimal ABI for attestation write
+const ATTESTATION_ABI = [
+  'function attest(address agent, bytes32 taskId, uint8 qualityScore, string reasoningCID) external returns (uint256)',
+  'function createAttestation(address agent, bytes32 taskId, uint8 qualityScore, string calldata reasoningCID) external returns (uint256)',
+];
 
 // In-memory state (in production, use a database)
 const agentState = {
@@ -134,150 +145,57 @@ function calculateTier(score: number): { label: string; dailyBudget: string; per
   return { label: 'New', dailyBudget: '3', perTxLimit: '0.50' };
 }
 
-// Task decomposition templates
-function decomposeTask(task: string): { subtasks: { id: string; type: string; description: string }[]; reasoning: string } {
-  const lower = task.toLowerCase();
-  if (lower.includes('compare') || lower.includes('vs') || lower.includes('competitor')) {
-    return {
-      subtasks: [
-        { id: 'subtask-1', type: 'research', description: `Collect data: features, TVL, team, funding for relevant projects related to: ${task}` },
-        { id: 'subtask-2', type: 'external_api', description: 'Get latest network activity and pricing data from external sources' },
-        { id: 'subtask-3', type: 'writing', description: 'Synthesize into competitive analysis with comparison table + SWOT' },
-      ],
-      reasoning: 'Competitive analysis requires data collection, external data enrichment, then synthesis into structured report.',
-    };
+// On-chain attestation via ethers.js v6
+async function writeOnChainAttestation(
+  agentAddress: string,
+  taskIdHex: string,
+  qualityScore: number,
+  reasoningCID: string,
+): Promise<{ txHash: string; onChain: boolean }> {
+  const contractAddr = ATTESTATION_CONTRACT_ADDRESS;
+  if (!contractAddr || contractAddr === '0x0000000000000000000000000000000000000000') {
+    console.log('attestation: contract not deployed yet');
+    return { txHash: '', onChain: false };
   }
-  if (lower.includes('yield') || lower.includes('defi')) {
-    return {
-      subtasks: [
-        { id: 'subtask-1', type: 'research', description: `Research DeFi protocols and yield data for: ${task}` },
-        { id: 'subtask-2', type: 'external_api', description: 'Fetch real-time yield rates and TVL from external APIs' },
-        { id: 'subtask-3', type: 'writing', description: 'Create yield comparison report with risk analysis' },
-      ],
-      reasoning: 'Yield analysis needs protocol research, real-time data, and risk-adjusted comparison.',
-    };
+
+  try {
+    const { ethers } = await import('ethers');
+    const provider = new ethers.JsonRpcProvider(KITE_RPC_URL, { name: 'kite-testnet', chainId: 2368 });
+    const wallet = new ethers.Wallet(KITE_PRIVATE_KEY, provider);
+    const contract = new ethers.Contract(contractAddr, ATTESTATION_ABI, wallet);
+
+    // Try both possible function signatures
+    let tx;
+    try {
+      tx = await contract.attest(agentAddress, taskIdHex, qualityScore, reasoningCID);
+    } catch {
+      tx = await contract.createAttestation(agentAddress, taskIdHex, qualityScore, reasoningCID);
+    }
+
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash || tx.hash, onChain: true };
+  } catch (err: any) {
+    console.error('attestation: on-chain write failed:', err?.message || err);
+    return { txHash: '', onChain: false };
   }
-  return {
-    subtasks: [
-      { id: 'subtask-1', type: 'research', description: `Research and gather data for: ${task}` },
-      { id: 'subtask-2', type: 'writing', description: `Synthesize research into a structured report for: ${task}` },
-    ],
-    reasoning: 'General analysis: research phase followed by synthesis.',
-  };
 }
 
-// Generate mock task result content
-function generateReportContent(task: string): string {
-  const lower = task.toLowerCase();
-  if (lower.includes('kite') && (lower.includes('competitor') || lower.includes('compare'))) {
-    return kiteCompetitiveReport();
+// Collect agent-generated content for the final report
+async function executeAgentSubtask(
+  subtaskType: string,
+  description: string,
+  task: string,
+): Promise<string> {
+  if (subtaskType === 'external_api') {
+    // external_api stays simulated — would be real x402 calls in production
+    return `[External API data] Real-time metrics fetched for: ${description}`;
   }
-  if (lower.includes('yield') || lower.includes('defi')) {
-    return defiYieldReport();
-  }
-  return genericReport(task);
+  // Use DeepSeek for research and writing subtasks
+  return generateAgentContent(subtaskType, description, task);
 }
 
-function kiteCompetitiveReport(): string {
-  return [
-    '## Kite AI Competitive Analysis',
-    '',
-    '### Executive Summary',
-    'Kite AI occupies a unique position in the AI blockchain landscape as the first chain purpose-built for AI agent economies. While competitors focus on inference or data, Kite focuses on the economic layer — payments, identity, and trust.',
-    '',
-    '### Comparison Table',
-    '| Feature | Kite AI | Bittensor | Ritual | Fetch.ai |',
-    '|---------|---------|-----------|--------|----------|',
-    '| Primary Focus | Agent Economy | Decentralized Inference | AI Compute | Autonomous Agents |',
-    '| Payment Protocol | x402 (HTTP-native) | TAO staking | None | FET token |',
-    '| Agent Identity | Passport + AA Wallet | None | None | Basic |',
-    '| Spending Controls | Programmable AA Rules | None | None | None |',
-    '| TPS | 10,000+ | ~200 | N/A | ~5,000 |',
-    '| Settlement | Instant (gasless) | ~12s | N/A | ~5s |',
-    '| Service Discovery | ksearch (native) | None | None | Almanac |',
-    '',
-    '### SWOT Analysis',
-    '**Strengths:**',
-    '- Only chain with native agent-to-agent payment (x402)',
-    '- Programmable spending controls via AA SDK',
-    '- Gasless transactions reduce friction',
-    '- Agent Passport provides verifiable identity',
-    '',
-    '**Weaknesses:**',
-    '- Early-stage ecosystem with limited agent diversity',
-    '- Smaller developer community than established chains',
-    '- Dependency on USDC for settlement',
-    '',
-    '**Opportunities:**',
-    '- AI agent market projected to reach $65B by 2028',
-    '- No direct competitor in "agent economy" niche',
-    '- Cross-chain expansion via LayerZero possible',
-    '',
-    '**Threats:**',
-    '- Ethereum L2s could add agent payment features',
-    '- Competing L1s (Fetch, Bittensor) expanding scope',
-    '- Regulatory uncertainty around autonomous agent payments',
-    '',
-    '### Key Insights',
-    '1. Kite\'s x402 protocol is a genuine innovation — HTTP-native payments eliminate integration complexity',
-    '2. The combination of Passport + AA SDK + Attestation creates a trust stack no competitor offers',
-    '3. First-mover advantage in agent economy infrastructure is significant',
-  ].join('\n');
-}
-
-function defiYieldReport(): string {
-  return [
-    '## DeFi Yield Comparison Report',
-    '',
-    '### Executive Summary',
-    'Cross-protocol yield analysis reveals significant dispersion across DeFi platforms, with risk-adjusted returns varying by 3-5x.',
-    '',
-    '### Yield Comparison Table',
-    '| Protocol | Chain | Stablecoin APY | Risk Level | TVL |',
-    '|----------|-------|---------------|------------|-----|',
-    '| Aave V3 | Ethereum | 4.2% | Low | $12.8B |',
-    '| Compound V3 | Ethereum | 3.8% | Low | $3.2B |',
-    '| Morpho | Ethereum | 5.1% | Medium | $2.1B |',
-    '| Kamino | Solana | 6.8% | Medium | $1.8B |',
-    '| Aerodrome | Base | 8.2% | Medium-High | $890M |',
-    '',
-    '### Risk Analysis',
-    '- **Smart Contract Risk:** Aave/Compound lowest due to extensive audits and battle-testing',
-    '- **Liquidity Risk:** Smaller protocols (Kamino, Aerodrome) have higher withdrawal risk during stress',
-    '- **Rate Volatility:** Higher yields correlate with higher rate volatility (r=0.78)',
-    '',
-    '### Recommendations',
-    '1. Conservative: Aave V3 USDC supply (4.2%, minimal risk)',
-    '2. Balanced: Morpho optimizer on top of Aave (5.1%, moderate risk)',
-    '3. Aggressive: Aerodrome LP positions (8.2%+, higher risk)',
-  ].join('\n');
-}
-
-function genericReport(task: string): string {
-  return [
-    `## Analysis Report: ${task}`,
-    '',
-    '### Executive Summary',
-    'Based on comprehensive research and multi-source data analysis, here are the key findings.',
-    '',
-    '### Key Findings',
-    '- **Finding 1:** Market analysis indicates strong growth potential in the target sector',
-    '- **Finding 2:** Competitive landscape shows clear differentiation opportunities',
-    '- **Finding 3:** Technical infrastructure supports scalability requirements',
-    '- **Finding 4:** Regulatory environment is evolving but manageable',
-    '',
-    '### Data Summary',
-    '| Metric | Current | 30d Change | Trend |',
-    '|--------|---------|------------|-------|',
-    '| Market Size | $24.5B | +8.2% | Expanding |',
-    '| Active Users | 1.2M | +15.3% | Growing |',
-    '| Developer Activity | 3,400 repos | +22.1% | Accelerating |',
-    '',
-    '### Recommendations',
-    '1. Prioritize first-mover sectors with lower competition',
-    '2. Focus on developer experience to drive adoption',
-    '3. Build strategic partnerships for ecosystem growth',
-  ].join('\n');
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export async function POST(request: NextRequest) {
@@ -298,7 +216,7 @@ export async function POST(request: NextRequest) {
       try {
         const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-        // Step 1: Task Decomposition via GPT-4o (falls back to templates if no API key)
+        // Step 1: Real Task Decomposition via DeepSeek (falls back to templates if no API key)
         send('log', { type: 'decomposition', message: `Decomposing task: "${task}"` });
         await delay(600);
 
@@ -337,6 +255,7 @@ export async function POST(request: NextRequest) {
         // Step 3: Thompson Sampling selection for each subtask type
         const payments: { from: string; to: string; amount: number; timestamp: number }[] = [];
         const costBreakdown: { agentId: string; cost: number }[] = [];
+        const subtaskResults: string[] = [];
 
         for (const subtask of decomposition.subtasks) {
           const candidates = quotes
@@ -367,7 +286,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          // LLM explains the decision (GPT-4o via Vercel AI SDK streamText — Section 4)
+          // Real LLM Decision Explanation via DeepSeek
           const explanation = await explainDecision({
             selectedAgentId: result.selected.id,
             qualitySample: result.qualitySample,
@@ -406,8 +325,15 @@ export async function POST(request: NextRequest) {
             amount: result.selected.price,
           });
 
-          // Simulate agent execution time
-          await delay(1200 + Math.random() * 800);
+          // Real agent execution: DeepSeek generates content for research/writing subtasks
+          send('log', {
+            type: 'payment',
+            message: `${result.selected.id} executing ${subtask.id}...`,
+            agentId: result.selected.id,
+          });
+
+          const agentOutput = await executeAgentSubtask(subtask.type, subtask.description, task);
+          subtaskResults.push(agentOutput);
 
           // Quality Gate (Section 5.5): reject if qualityScore < 2, refund 90%, failover
           const subtaskQuality = 1 + Math.floor(Math.random() * 5); // 1-5
@@ -442,7 +368,10 @@ export async function POST(request: NextRequest) {
               costBreakdown[costBreakdown.length - 2].cost -= refundAmount;
               payments.push({ from: 'coordinator', to: alt.id, amount: alt.price, timestamp: Date.now() });
               send('payment', { from: 'coordinator', to: alt.id, amount: alt.price });
-              await delay(1000);
+
+              // Failover agent also produces real content
+              const failoverOutput = await executeAgentSubtask(subtask.type, subtask.description, task);
+              subtaskResults[subtaskResults.length - 1] = failoverOutput;
             }
             send('log', {
               type: 'attestation',
@@ -459,8 +388,8 @@ export async function POST(request: NextRequest) {
           await delay(200);
         }
 
-        // Step 5: Quality evaluation & attestation
-        await emitAttestation(send, costBreakdown, task);
+        // Step 5: Quality evaluation & attestation (real on-chain attempt)
+        await emitAttestation(send, costBreakdown, task, subtaskResults);
 
         send('done', { taskId: taskId });
       } catch (error) {
@@ -485,9 +414,9 @@ async function emitAttestation(
   send: (event: string, data: any) => void,
   costBreakdown: { agentId: string; cost: number }[],
   task: string,
+  subtaskResults: string[],
 ) {
   const qualityScore = 3 + Math.floor(Math.random() * 3); // 3-5
-  const txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   const reasoningCID = 'Qm' + Array.from({ length: 44 }, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(Math.floor(Math.random() * 62))).join('');
   const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -495,8 +424,29 @@ async function emitAttestation(
   await delay(300);
   send('log', { type: 'attestation', message: `Reasoning CID: ${reasoningCID}` });
   send('log', { type: 'attestation', message: `Writing attestation to Kite chain...` });
-  await delay(800);
-  send('log', { type: 'attestation', message: `Attestation created on-chain — Tx: ${txHash.slice(0, 18)}...${txHash.slice(-8)}` });
+  await delay(400);
+
+  // Real on-chain attestation attempt
+  const taskIdHex = '0x' + Buffer.from(taskId).toString('hex').padEnd(64, '0').slice(0, 64);
+  const agentAddr = costBreakdown.length > 0
+    ? (agentState.agents.find(a => a.id === costBreakdown[0].agentId)?.walletAddress || '0x0000000000000000000000000000000000000001')
+    : '0x0000000000000000000000000000000000000001';
+
+  const attestResult = await writeOnChainAttestation(agentAddr, taskIdHex, qualityScore, reasoningCID);
+
+  let txHash: string;
+  if (attestResult.onChain) {
+    txHash = attestResult.txHash;
+    send('log', { type: 'attestation', message: `Attestation written on-chain — Tx: ${txHash.slice(0, 18)}...${txHash.slice(-8)}` });
+  } else {
+    // Generate simulated tx hash as fallback
+    txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const reason = (!ATTESTATION_CONTRACT_ADDRESS || ATTESTATION_CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000')
+      ? 'contract not deployed yet'
+      : 'on-chain write failed (see server logs)';
+    send('log', { type: 'attestation', message: `attestation: ${reason} — using simulated tx hash` });
+    send('log', { type: 'attestation', message: `Simulated attestation Tx: ${txHash.slice(0, 18)}...${txHash.slice(-8)}` });
+  }
   await delay(200);
 
   // Update bandit arms
@@ -546,11 +496,13 @@ async function emitAttestation(
 
   // Check anti-monopoly
   if (agentState.metrics.giniCoefficient > 0.5) {
-    send('log', { type: 'attestation', message: `⚠ Anti-monopoly: Gini ${agentState.metrics.giniCoefficient.toFixed(3)} > 0.5 — exploration boost active` });
+    send('log', { type: 'attestation', message: `Anti-monopoly: Gini ${agentState.metrics.giniCoefficient.toFixed(3)} > 0.5 — exploration boost active` });
   }
 
-  // Generate report content
-  const content = generateReportContent(task);
+  // Combine real agent-generated content into final report
+  const content = subtaskResults.length > 0
+    ? subtaskResults.join('\n\n---\n\n')
+    : `## Analysis Report: ${task}\n\nNo agent content was generated for this task.`;
 
   // Send final result
   send('result', {
@@ -560,6 +512,7 @@ async function emitAttestation(
     costBreakdown,
     totalCost,
     attestationTxHash: txHash,
+    attestationOnChain: attestResult.onChain,
     reasoningCID,
     completedAt: new Date().toISOString(),
   });
@@ -570,8 +523,4 @@ async function emitAttestation(
     metrics: agentState.metrics,
     trustEvents: agentState.trustEvents.slice(-10),
   });
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }

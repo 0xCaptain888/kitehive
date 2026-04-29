@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { EconomyGraph } from '@/components/EconomyGraph';
 import { NegotiationLog } from '@/components/NegotiationLog';
 import { AgentLeaderboard } from '@/components/AgentLeaderboard';
@@ -207,6 +207,7 @@ Data collected via x402 agent network (3 specialized agents), cross-referenced w
 // Main Page Component
 // ================================================================
 export default function DashboardPage() {
+  const [mode, setMode] = useState<'detecting' | 'production' | 'demo'>('detecting');
   const [agents, setAgents] = useState<Agent[]>(DEMO_AGENTS);
   const [metrics, setMetrics] = useState<EconomyMetrics>(DEMO_METRICS);
   const [negotiationLog, setNegotiationLog] = useState<NegotiationEntry[]>([]);
@@ -219,6 +220,38 @@ export default function DashboardPage() {
   const [feedbackTaskId, setFeedbackTaskId] = useState<string | null>(null);
   const abortRef = useRef(false);
 
+  // --- Mode detection on mount ---
+  useEffect(() => {
+    let cancelled = false;
+    async function detect() {
+      try {
+        const res = await fetch('/api/agents');
+        if (!res.ok) throw new Error('not ok');
+        const agentsData = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(agentsData) && agentsData.length > 0) {
+          setAgents(agentsData);
+        }
+        // Also try to load economy metrics
+        try {
+          const ecoRes = await fetch('/api/economy');
+          if (ecoRes.ok) {
+            const ecoData = await ecoRes.json();
+            if (!cancelled) {
+              setMetrics(ecoData);
+              setSpent(ecoData.totalVolume ?? DEMO_METRICS.totalVolume);
+            }
+          }
+        } catch { /* ignore, keep demo metrics */ }
+        if (!cancelled) setMode('production');
+      } catch {
+        if (!cancelled) setMode('demo');
+      }
+    }
+    detect();
+    return () => { cancelled = true; };
+  }, []);
+
   const addLog = useCallback((type: NegotiationEntry['type'], message: string, agentId?: string) => {
     setNegotiationLog((prev) => [
       ...prev,
@@ -226,8 +259,113 @@ export default function DashboardPage() {
     ]);
   }, []);
 
+  // --- Production mode: SSE streaming via /api/task ---
+  const runTaskProduction = useCallback(async (taskDescription: string) => {
+    setIsRunning(true);
+    setTaskResult(null);
+    setNegotiationLog([]);
+    setPayments([]);
+
+    try {
+      const res = await fetch('/api/task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task: taskDescription }),
+      });
+
+      if (!res.ok || !res.body) {
+        addLog('error', `API error: ${res.status} ${res.statusText}`);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+
+          let event: { type: string; [key: string]: unknown };
+          try { event = JSON.parse(raw); } catch { continue; }
+
+          switch (event.type) {
+            case 'log':
+              addLog(
+                (event.logType as NegotiationEntry['type']) || 'decomposition',
+                event.message as string,
+                event.agentId as string | undefined,
+              );
+              break;
+
+            case 'payment':
+              setPayments((prev) => [
+                ...prev,
+                {
+                  from: (event.from as string) || 'coordinator',
+                  to: event.to as string,
+                  amount: event.amount as number,
+                  timestamp: Date.now(),
+                },
+              ]);
+              setSpent((prev) => +(prev + (event.amount as number)).toFixed(4));
+              break;
+
+            case 'result':
+              setTaskResult(event.result as TaskResult);
+              setFeedbackTaskId((event.result as TaskResult).taskId);
+              break;
+
+            case 'state_update': {
+              const update = event as { agents?: Agent[]; metrics?: EconomyMetrics };
+              if (update.agents) setAgents(update.agents);
+              if (update.metrics) {
+                setMetrics(update.metrics);
+                if (update.metrics.totalVolume != null) setSpent(update.metrics.totalVolume);
+              }
+              break;
+            }
+
+            case 'trust_lifecycle':
+              setTrustEvents((prev) => [
+                ...prev,
+                {
+                  agent: event.agent as string,
+                  oldTier: event.oldTier as string,
+                  newTier: event.newTier as string,
+                  budgetChange: event.budgetChange as string,
+                  timestamp: Date.now(),
+                },
+              ]);
+              break;
+
+            case 'error':
+              addLog('error', (event.message as string) || 'Unknown error from API');
+              break;
+
+            case 'done':
+              break;
+          }
+        }
+      }
+    } catch (err) {
+      addLog('error', `Network error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsRunning(false);
+    }
+  }, [addLog]);
+
   // --- Client-side demo task simulation ---
-  const runTask = useCallback(async (taskDescription: string) => {
+  const runTaskDemo = useCallback(async (taskDescription: string) => {
     if (isRunning) return;
     abortRef.current = false;
     setIsRunning(true);
@@ -302,8 +440,8 @@ export default function DashboardPage() {
           }
         }
         selected.push({ ...best, sample: bestSample, isExploration });
-        const mode = isExploration ? 'EXPLORATION' : 'EXPLOITATION';
-        addLog('selection', `  [${mode}] ${st.id} → ${best.agent.id} | sampled quality=${bestSample.toFixed(3)}, price=$${best.price.toFixed(4)}, score=${bestScore.toFixed(3)}`, best.agent.id);
+        const selectionMode = isExploration ? 'EXPLORATION' : 'EXPLOITATION';
+        addLog('selection', `  [${selectionMode}] ${st.id} → ${best.agent.id} | sampled quality=${bestSample.toFixed(3)}, price=$${best.price.toFixed(4)}, score=${bestScore.toFixed(3)}`, best.agent.id);
         await delay(400);
       }
 
@@ -382,8 +520,39 @@ export default function DashboardPage() {
     }
   }, [isRunning, agents, metrics, addLog]);
 
+  // --- Unified runTask dispatcher ---
+  const runTask = useCallback(async (taskDescription: string) => {
+    if (isRunning) return;
+    if (mode === 'production') {
+      await runTaskProduction(taskDescription);
+    } else {
+      await runTaskDemo(taskDescription);
+    }
+  }, [isRunning, mode, runTaskProduction, runTaskDemo]);
+
   return (
     <div className="max-w-[1600px] mx-auto p-4">
+      {/* Mode badge */}
+      <div className="flex justify-end mb-2">
+        {mode === 'detecting' && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
+            <span className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" />
+            Detecting...
+          </span>
+        )}
+        {mode === 'production' && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/60 text-green-300 border border-green-700/50">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            LIVE
+          </span>
+        )}
+        {mode === 'demo' && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-900/60 text-yellow-300 border border-yellow-700/50">
+            <span className="w-2 h-2 rounded-full bg-yellow-400" />
+            DEMO
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-12 gap-4" style={{ minHeight: 'calc(100vh - 80px)' }}>
         {/* Left Column */}
         <div className="col-span-3 space-y-4">

@@ -193,12 +193,12 @@ kitehive/
 
 ### Deployment
 
-| Network | Chain ID | RPC | Explorer |
-|---|---|---|---|
-| Kite Testnet | 2368 | `https://rpc-testnet.gokite.ai` | [testnet.kitescan.ai](https://testnet.kitescan.ai) |
-| Kite Mainnet | 2366 | `https://rpc.gokite.ai` | [kitescan.ai](https://kitescan.ai) |
+| Network | Chain ID | RPC | Contract | Explorer |
+|---|---|---|---|---|
+| Kite Testnet | 2368 | `https://rpc-testnet.gokite.ai` | `0x7a0b21045Ff37f79095Ee338f9d6F2f303700046` | [View on Kitescan](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
+| Kite Mainnet | 2366 | `https://rpc.gokite.ai` | TBD | [kitescan.ai](https://kitescan.ai) |
 
-Contract addresses: see `contracts/deployments/`
+Verified attestation tx: [`0x6fe380...`](https://testnet.kitescan.ai/tx/0x6fe38034523362349f94fe29f230eab53ee6b5d1763e4d533d534d68eb54c5bd)
 
 ## Running Tests
 
@@ -258,7 +258,7 @@ Output: Structured report with comparison table, SWOT matrix, key insights
 
 | Component | Technology |
 |---|---|
-| LLM | GPT-4o via API |
+| LLM | DeepSeek via API (OpenAI-compatible) |
 | Agent Framework | Raw TypeScript (no LangChain/CrewAI) |
 | Frontend | Next.js 14 + Tailwind + shadcn/ui |
 | Real-time | SSE (Server-Sent Events) |

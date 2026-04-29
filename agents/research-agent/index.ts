@@ -14,7 +14,7 @@ const pricing = new PricingEngine({
   minPrice: 0.10,
 });
 
-let openai: OpenAI;
+let client: OpenAI;
 
 async function handleQuote(rfq: any) {
   const quote = pricing.generateQuote(rfq.complexity || 3);
@@ -29,8 +29,8 @@ async function handleExecute(task: any) {
   pricing.setLoad(1); // Simulate being busy
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    const response = await client.chat.completions.create({
+      model: 'deepseek-chat',
       messages: [
         {
           role: 'system',
@@ -52,7 +52,7 @@ Format your output as structured data with clear sections.`,
       type: 'research',
       content,
       metadata: {
-        model: 'gpt-4o',
+        model: 'deepseek-chat',
         tokensUsed: response.usage?.total_tokens || 0,
         completedAt: new Date().toISOString(),
       },
@@ -63,7 +63,10 @@ Format your output as structured data with clear sections.`,
 }
 
 export function startResearchAgent(port: number = 3001, apiKey?: string) {
-  openai = new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY });
+  client = new OpenAI({
+    apiKey: apiKey || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL: 'https://api.deepseek.com',
+  });
 
   const server = createX402Server({
     agentId: AGENT_ID,

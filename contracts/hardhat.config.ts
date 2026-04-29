@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
+dotenv.config();
 dotenv.config({ path: "../.env" });
 
 const config: HardhatUserConfig = {
@@ -9,12 +10,12 @@ const config: HardhatUserConfig = {
     kiteTestnet: {
       url: "https://rpc-testnet.gokite.ai",
       chainId: 2368,
-      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+      accounts: process.env.KITE_PRIVATE_KEY ? [process.env.KITE_PRIVATE_KEY] : [],
     },
     kiteMainnet: {
       url: "https://rpc.gokite.ai",
       chainId: 2366,
-      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+      accounts: process.env.KITE_PRIVATE_KEY ? [process.env.KITE_PRIVATE_KEY] : [],
     },
   },
 };

@@ -12,7 +12,7 @@ const pricing = new PricingEngine({
   minPrice: 0.05,
 });
 
-let openai: OpenAI;
+let client: OpenAI;
 
 async function handleQuote(rfq: any) {
   const quote = pricing.generateQuote(rfq.complexity || 3);
@@ -26,8 +26,8 @@ async function handleQuote(rfq: any) {
 async function handleExecute(task: any) {
   pricing.setLoad(1);
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    const response = await client.chat.completions.create({
+      model: 'deepseek-chat',
       messages: [
         {
           role: 'system',
@@ -47,7 +47,7 @@ Prioritize clarity and actionability over length.`,
       type: 'writing',
       content: response.choices[0]?.message?.content || '',
       metadata: {
-        model: 'gpt-4o',
+        model: 'deepseek-chat',
         tokensUsed: response.usage?.total_tokens || 0,
         completedAt: new Date().toISOString(),
       },
@@ -58,7 +58,10 @@ Prioritize clarity and actionability over length.`,
 }
 
 export function startWriterAgentB(port: number = 3003, apiKey?: string) {
-  openai = new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY });
+  client = new OpenAI({
+    apiKey: apiKey || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL: 'https://api.deepseek.com',
+  });
 
   return createX402Server({
     agentId: AGENT_ID,

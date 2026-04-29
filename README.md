@@ -141,6 +141,7 @@ kitehive/
 │   │   ├── negotiator.ts                    # RFQ + quote collection
 │   │   ├── explain.ts                       # LLM decision explanation
 │   │   ├── failover.ts                      # Fault tolerance
+│   │   ├── quality-gate.ts                  # Quality gate + 90% refund + failover
 │   │   └── attester.ts                      # On-chain attestation writer
 │   ├── worker-template/
 │   │   ├── x402-server.ts                   # x402 HTTP endpoint
@@ -155,7 +156,14 @@ kitehive/
 ├── dashboard/                               # Next.js 14 App Router
 │   ├── app/
 │   │   ├── page.tsx                         # Main economy dashboard
-│   │   └── registry/page.tsx                # Agent registry
+│   │   ├── registry/page.tsx                # Agent registry
+│   │   └── api/
+│   │       ├── task/route.ts                # SSE streaming pipeline
+│   │       ├── agents/route.ts              # Agent registry API
+│   │       ├── economy/route.ts             # Economy metrics API
+│   │       └── attestation/route.ts         # Attestation API
+│   ├── lib/
+│   │   └── llm.ts                           # Vercel AI SDK (streamText + GPT-4o)
 │   └── components/
 │       ├── EconomyGraph.tsx                 # D3.js force-directed graph
 │       ├── NegotiationLog.tsx               # Streaming reasoning

@@ -200,6 +200,17 @@ kitehive/
 
 Verified attestation tx: [`0x6fe380...`](https://testnet.kitescan.ai/tx/0x6fe38034523362349f94fe29f230eab53ee6b5d1763e4d533d534d68eb54c5bd)
 
+### On-Chain Economy History
+
+21 attestation transactions across 4 agents and 7 task types — [view all on Kitescan](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046)
+
+| Agent | Reputation | Tasks | Role |
+|---|---|---|---|
+| research-agent-a | 436/500 | 8 | Web search, data analysis |
+| writer-agent-a | 439/500 | 5 | Report synthesis |
+| writer-agent-b | 366/500 | 3 | Summaries (lower quality) |
+| external-api | 474/500 | 4 | Real-time market data |
+
 ## Running Tests
 
 ```bash

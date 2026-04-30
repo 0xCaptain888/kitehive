@@ -17,9 +17,15 @@ export interface RegisteredAgent {
   isExternal: boolean;
 }
 
+// Vercel serverless has a read-only filesystem; use in-memory store as fallback
+const IS_VERCEL = process.env.VERCEL === '1';
 const DATA_FILE = path.join(process.cwd(), 'data', 'agents.json');
 
+// In-memory cache for serverless environments
+let memoryStore: RegisteredAgent[] | null = null;
+
 function ensureDataDir() {
+  if (IS_VERCEL) return;
   const dir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -27,6 +33,21 @@ function ensureDataDir() {
 }
 
 export function readAgents(): RegisteredAgent[] {
+  // On Vercel, use in-memory store (seeded from bundled JSON or defaults)
+  if (IS_VERCEL) {
+    if (!memoryStore) {
+      try {
+        // Try to read the bundled data file (included in deployment)
+        const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+        memoryStore = JSON.parse(raw);
+      } catch {
+        memoryStore = getDefaultAgents();
+      }
+    }
+    return memoryStore;
+  }
+
+  // Local/self-hosted: use filesystem
   ensureDataDir();
 
   if (!fs.existsSync(DATA_FILE)) {
@@ -44,6 +65,11 @@ export function readAgents(): RegisteredAgent[] {
 }
 
 export function writeAgents(agents: RegisteredAgent[]): void {
+  if (IS_VERCEL) {
+    // On Vercel, persist in memory only (resets on cold start)
+    memoryStore = agents;
+    return;
+  }
   ensureDataDir();
   fs.writeFileSync(DATA_FILE, JSON.stringify(agents, null, 2));
 }

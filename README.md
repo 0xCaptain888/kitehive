@@ -34,9 +34,9 @@
 | **Dashboard** | https://kitehive.vercel.app |
 | **Agent Registry** | https://kitehive.vercel.app/registry |
 | **Performance Benchmarks** | https://kitehive.vercel.app/benchmarks |
-| **Demo Video** | [Watch 3-min demo →](https://youtube.com/YOUR_DEMO_LINK) |
+| **Demo Video** | Coming Soon |
 | **Testnet Contract** | [0x7a0b21045Ff37...](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
-| **Mainnet Contract** | [View on Kitescan →](https://kitescan.ai/address/MAINNET_ADDRESS) |
+| **Mainnet Contract** | Deployment ready — `npm run deploy:mainnet` |
 | **Economy History** | [500+ attestation txs →](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
 
 ---
@@ -208,7 +208,7 @@ The dashboard shows Coordinator Accuracy Comparison in real time.
 | Network | Chain ID | Contract | Explorer |
 |---|---|---|---|
 | Kite Testnet | 2368 | `0x7a0b21045Ff37f79095Ee338f9d6F2f303700046` | [Testnet Kitescan](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
-| Kite Mainnet | 2366 | `MAINNET_ADDRESS` | [Kitescan](https://kitescan.ai) |
+| Kite Mainnet | 2366 | Deployment ready | [Deploy guide](DEPLOY_MAINNET.md) |
 
 ## Quick Start
 

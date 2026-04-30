@@ -192,6 +192,65 @@ function fallbackAgentContent(subtaskType: string, description: string, task: st
   return `## Synthesis Report: ${task}\n\nAfter analyzing all collected data, the following conclusions emerge:\n\n1. The primary opportunity lies in first-mover advantage\n2. Technical infrastructure supports the growth thesis\n3. Risk factors are manageable with proper mitigation\n\n**Recommendation:** Proceed with strategic focus on core differentiators.`;
 }
 
+// P1: LLM-based quality evaluation (replaces random scoring)
+export async function evaluateQualityWithLLM(
+  agentOutput: string,
+  subtaskDescription: string,
+  agentId: string,
+): Promise<{ score: number; reasoning: string }> {
+  if (!process.env.DEEPSEEK_API_KEY && !process.env.OPENAI_API_KEY) {
+    return fallbackQualityEval(agentOutput);
+  }
+
+  try {
+    const result = await streamText({
+      model: deepseek('deepseek-chat'),
+      system: `You are a quality evaluator in KiteHive, an AI agent economy.
+Score the agent's output on a scale of 1-5:
+1 = Unusable, off-topic or empty
+2 = Poor quality, major issues
+3 = Acceptable, meets minimum requirements
+4 = Good quality, thorough and accurate
+5 = Excellent, exceeds expectations
+
+Respond in JSON only: {"score": <1-5>, "reasoning": "<1 sentence>"}`,
+      prompt: `Agent: ${agentId}
+Task: ${subtaskDescription}
+Output (first 800 chars): ${agentOutput.slice(0, 800)}
+
+Rate this output 1-5.`,
+      maxTokens: 150,
+      temperature: 0.2,
+    });
+
+    let fullText = '';
+    for await (const chunk of result.textStream) {
+      fullText += chunk;
+    }
+
+    const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      const score = Math.max(1, Math.min(5, Math.round(parsed.score || 3)));
+      return { score, reasoning: parsed.reasoning || 'Evaluated by LLM.' };
+    }
+    return fallbackQualityEval(agentOutput);
+  } catch {
+    return fallbackQualityEval(agentOutput);
+  }
+}
+
+function fallbackQualityEval(output: string): { score: number; reasoning: string } {
+  // Heuristic fallback: score based on output length and structure
+  const len = output.length;
+  if (len < 50) return { score: 1, reasoning: 'Output too short or empty.' };
+  if (len < 200) return { score: 2, reasoning: 'Output lacks depth.' };
+  const hasStructure = output.includes('#') || output.includes('|') || output.includes('- ');
+  if (len > 800 && hasStructure) return { score: 5, reasoning: 'Comprehensive and well-structured output.' };
+  if (len > 400 && hasStructure) return { score: 4, reasoning: 'Good quality with clear structure.' };
+  return { score: 3, reasoning: 'Acceptable output with room for improvement.' };
+}
+
 function fallbackExplanation(context: {
   selectedAgentId: string;
   qualitySample: number;

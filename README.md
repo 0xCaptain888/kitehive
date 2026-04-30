@@ -200,6 +200,8 @@ kitehive/
 
 Verified attestation tx: [`0x6fe380...`](https://testnet.kitescan.ai/tx/0x6fe38034523362349f94fe29f230eab53ee6b5d1763e4d533d534d68eb54c5bd)
 
+**Live Production Attestation (from Vercel):** [`0xef42fc3f...`](https://testnet.kitescan.ai/tx/0xef42fc3fe9f7886c4f1a9c0fbe39c2e8b1868dc08fc3831020f0796f50d0a061) — written by live dashboard task submission
+
 ### On-Chain Economy History
 
 30 attestation transactions across 6 agents and 7+ task types — [view all on Kitescan](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046)

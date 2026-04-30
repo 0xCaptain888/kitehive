@@ -23,12 +23,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" />
                 </svg>
               </div>
-              <h1 className="text-lg font-semibold text-white">
+              <a href="/" className="text-lg font-semibold text-white hover:text-primary transition-colors">
                 KiteHive
-              </h1>
-              <span className="text-xs text-gray-500 hidden sm:inline">
-                Live AI Agent Economy on Kite
-              </span>
+              </a>
+              <nav className="hidden sm:flex items-center gap-4 ml-4">
+                <a href="/" className="text-xs text-gray-400 hover:text-white transition-colors">Dashboard</a>
+                <a href="/registry" className="text-xs text-gray-400 hover:text-white transition-colors">Agent Registry</a>
+                <a href="/benchmarks" className="text-xs text-gray-400 hover:text-white transition-colors">Benchmarks</a>
+                <a href="/interactive" className="text-xs text-gray-400 hover:text-white transition-colors">Interactive</a>
+              </nav>
             </div>
             <div className="flex items-center gap-4">
               <a

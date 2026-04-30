@@ -15,8 +15,14 @@ import { ethers } from "ethers";
  *   - User Session Cap (per-request budget guard)
  */
 
-const RPC_URL = process.env.KITE_RPC_URL || process.env.KITE_TESTNET_RPC || "https://rpc-testnet.gokite.ai";
-const CONTRACT_ADDR = process.env.ATTESTATION_CONTRACT_TESTNET || process.env.ATTESTATION_CONTRACT_ADDRESS || "";
+// Mainnet-first: prefer mainnet config, fall back to testnet
+const IS_MAINNET = process.env.NEXT_PUBLIC_CHAIN_ID === "2366";
+const RPC_URL = IS_MAINNET
+  ? (process.env.KITE_MAINNET_RPC || "https://rpc.gokite.ai")
+  : (process.env.KITE_RPC_URL || process.env.KITE_TESTNET_RPC || "https://rpc-testnet.gokite.ai");
+const CONTRACT_ADDR = IS_MAINNET
+  ? (process.env.ATTESTATION_CONTRACT_MAINNET || process.env.NEXT_PUBLIC_ATTESTATION_CONTRACT || "")
+  : (process.env.ATTESTATION_CONTRACT_TESTNET || process.env.ATTESTATION_CONTRACT_ADDRESS || "");
 
 // Minimal ABI for economy summary
 const ABI = [
@@ -155,6 +161,14 @@ export async function GET() {
       : null;
 
     return NextResponse.json({
+      // ── Network info ──────────────────────────────────────────────────
+      network: {
+        name:    IS_MAINNET ? "Kite Mainnet" : "Kite Testnet",
+        chainId: IS_MAINNET ? 2366 : 2368,
+        rpc:     RPC_URL,
+        explorer: IS_MAINNET ? "https://kitescan.ai" : "https://testnet.kitescan.ai",
+      },
+
       // ── Economy totals (no cap, runs forever) ──────────────────────────
       economy: {
         totalVolumeUSD:     totalVolumeUSD,

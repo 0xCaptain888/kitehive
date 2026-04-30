@@ -4,8 +4,9 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "deploy:testnet": "hardhat run scripts/deploy.ts --network kiteTestnet",
-    "deploy:mainnet": "hardhat run scripts/deploy.ts --network kiteMainnet"
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network kite-testnet",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network kite-mainnet",
+    "verify": "ts-node scripts/verify-deployment.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",

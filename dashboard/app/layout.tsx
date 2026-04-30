@@ -7,6 +7,11 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || '2368';
+  const isMainnet = chainId === '2366';
+  const networkLabel = isMainnet ? 'Mainnet' : 'Testnet';
+  const explorerUrl = process.env.NEXT_PUBLIC_KITE_EXPLORER || (isMainnet ? 'https://kitescan.ai' : 'https://testnet.kitescan.ai');
+
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background antialiased">
@@ -26,6 +31,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <a
+                href={explorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                  isMainnet
+                    ? 'bg-green-900/60 text-green-300 border-green-700/50'
+                    : 'bg-yellow-900/60 text-yellow-300 border-yellow-700/50'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${isMainnet ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`}></span>
+                {networkLabel} (Chain {chainId})
+              </a>
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 <span className="w-2 h-2 rounded-full bg-accent-green animate-pulse"></span>
                 Economy Active

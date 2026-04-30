@@ -1,0 +1,123 @@
+name: KiteHive CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Smart Contract Tests ──────────────────────────────────────────────
+  contracts:
+    name: Smart Contract Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: contracts/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts
+        run: npx hardhat compile
+
+      - name: Run contract tests
+        run: npm test
+        env:
+          KITE_TESTNET_RPC: https://rpc-testnet.gokite.ai
+
+      - name: Upload compilation artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-artifacts
+          path: contracts/artifacts/
+
+  # ── Agent Unit Tests ─────────────────────────────────────────────────
+  agents:
+    name: Agent Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run Thompson Sampling bandit tests
+        run: npm run test:bandit
+        env:
+          # Bandit tests don't need real keys, just structure validation
+          DEEPSEEK_API_KEY: dummy-for-ci
+          KITE_RPC_URL: https://rpc-testnet.gokite.ai
+
+  # ── Dashboard Build ──────────────────────────────────────────────────
+  dashboard:
+    name: Dashboard Build Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Next.js build
+        run: npm run build
+        env:
+          # Required env vars for build (non-sensitive defaults for CI)
+          DEEPSEEK_API_KEY:                 ${{ secrets.DEEPSEEK_API_KEY || 'dummy' }}
+          KITE_RPC_URL:                     https://rpc-testnet.gokite.ai
+          ATTESTATION_CONTRACT_TESTNET:     "0x0000000000000000000000000000000000000000"
+          NEXT_PUBLIC_ATTESTATION_CONTRACT: "0x0000000000000000000000000000000000000000"
+          NEXT_PUBLIC_KITE_EXPLORER:        https://testnet.kitescan.ai
+          NEXT_PUBLIC_CHAIN_ID:             "2368"
+          KITE_PRIVATE_KEY:                 ${{ secrets.KITE_PRIVATE_KEY || '0x' + '0'.repeat(64) }}
+
+  # ── Summary badge ────────────────────────────────────────────────────
+  status:
+    name: All checks passed
+    runs-on: ubuntu-latest
+    needs: [contracts, agents, dashboard]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.contracts.result }}" == "success" && \
+                "${{ needs.agents.result }}"   == "success" && \
+                "${{ needs.dashboard.result }}" == "success" ]]; then
+            echo "✅ All checks passed"
+          else
+            echo "❌ One or more checks failed"
+            exit 1
+          fi

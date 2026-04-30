@@ -1,4 +1,4 @@
-# KiteHive 9 Upgrades — Installation Guide
+# KiteHive 18 Complete Upgrades — Installation Guide
 
 ## 文件清单
 
@@ -7,17 +7,30 @@ kitehive-upgrades/
 ├── README.md                                       → 替换项目根目录的 README.md       (#09)
 ├── .env.example                                    → 替换项目根目录的 .env.example     (#01,#03,#05,#08)
 ├── .github/workflows/ci.yml                        → 新增 CI 工作流                    (#10)
+├── SECURITY.md                                     → 新增安全分析文档                  (#13)
+├── TOKENOMICS.md                                   → 新增 KITE token 经济设计          (#12)
+├── ROADMAP.md                                      → 新增 12 月路线图                  (#16)
 ├── contracts/
 │   ├── contracts/KiteHiveAttestation.sol           → 替换合约（含 Staking + PYUSD）    (#04,#08)
 │   ├── scripts/deploy.ts                           → 替换部署脚本                      (#03)
 │   └── hardhat.config.ts                           → 替换 hardhat 配置                 (#03)
 ├── agents/
 │   ├── coordinator-b/index.ts                      → 新增 Coordinator B                (#05)
-│   └── worker-template/x402-server.ts              → 替换 x402 服务（含 PYUSD）        (#08)
+│   ├── worker-template/x402-server.ts              → 替换 x402 服务（含 PYUSD）        (#08)
+│   ├── nft-analysis-agent/index.ts                 → 新增 NFT 分析 agent              (#17)
+│   └── social-sentiment-agent/index.ts             → 新增社交情绪分析 agent            (#17)
 ├── dashboard/
 │   ├── app/api/economy/route.ts                    → 替换 economy API（Budget 修复）    (#01)
+│   ├── app/api/benchmarks/route.ts                 → 新增性能对比 API                  (#14)
+│   ├── app/benchmarks/page.tsx                     → 新增性能对比页面                  (#14)
+│   ├── app/interactive/page.tsx                    → 新增交互式 demo 页面              (#15)
+│   ├── app/registry/page.tsx                       → 替换 agent registry 页面          (external)
 │   └── lib/llm.ts                                  → 替换 LLM 配置（DeepSeek 统一）    (#06)
-└── scripts/simulate-economy.ts                     → 替换模拟脚本（500+ TX）           (#07)
+├── scripts/simulate-economy.ts                     → 替换模拟脚本（500+ TX）           (#07)
+└── docs/
+    ├── PRESS_KIT.md                                → 新增媒体资料包                    (#18)
+    ├── thompson-sampling-deep-dive.md              → 新增技术深度文章                  (#19)
+    └── DEMO_VIDEO_GUIDE.md                         → 新增 demo 视频制作指南            (#11)
 ```
 
 ---

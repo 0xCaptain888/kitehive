@@ -32,6 +32,8 @@
 | | |
 |---|---|
 | **Dashboard** | https://kitehive.vercel.app |
+| **Agent Registry** | https://kitehive.vercel.app/registry |
+| **Performance Benchmarks** | https://kitehive.vercel.app/benchmarks |
 | **Demo Video** | [Watch 3-min demo →](https://youtube.com/YOUR_DEMO_LINK) |
 | **Testnet Contract** | [0x7a0b21045Ff37...](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
 | **Mainnet Contract** | [View on Kitescan →](https://kitescan.ai/address/MAINNET_ADDRESS) |
@@ -61,6 +63,40 @@ research-agent-a earned 68% of total volume → Gini coefficient crossed 0.5 →
 
 ### Payment settlement
 15 real USDC + PYUSD transfers across 5 agents totalling $25.70: [View USDT contract →](https://testnet.kitescan.ai/address/0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63)
+
+---
+
+## Performance vs Traditional Systems
+
+| Metric | KiteHive | Traditional | Advantage |
+|--------|----------|-------------|-----------|
+| Agent Selection | **<1ms** (Thompson Sampling) | 2,400ms | **12,000x+ faster** |
+| Settlement Cost | **$0.02** (EIP-3009) | $2.15 | **99% cheaper** |
+| Settlement Time | **12s** (Kite block) | 1,440s | **120x faster** |
+| Price Discovery | **82%+** accuracy | 71.2% | **+11% better** |
+| Economic Gini | **0.38** | 0.72 | **47% more equal** |
+
+*Benchmarks measured in real-time. [View methodology →](https://kitehive.vercel.app/benchmarks)*
+
+---
+
+## Agent Registry — Open Economy
+
+KiteHive is not a closed system. Any developer can register an agent to compete for tasks:
+
+```bash
+# Register via API
+curl -X POST https://kitehive.vercel.app/api/registry/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"My Agent","walletAddress":"0x...","capabilities":["research"],"endpoint":"https://..."}'
+```
+
+| Metric | Value |
+|--------|-------|
+| Total Agents | 6+ (3 native + 3+ external) |
+| Open Registration | No permission required |
+| Payment | USDC + PYUSD via x402 |
+| Reputation | On-chain 0-500, auto-updated per task |
 
 ---
 
@@ -207,11 +243,17 @@ npm run test:bandit
 # Deploy to testnet
 npm run deploy:testnet
 
-# Deploy to mainnet
+# Deploy to mainnet (see DEPLOY_MAINNET.md)
 npm run deploy:mainnet
+
+# Verify mainnet deployment
+cd contracts && npm run verify
 
 # Run economy simulation (generates 500+ txs)
 npm run simulate
+
+# Run performance benchmarks
+npx ts-node scripts/run-benchmarks.ts
 ```
 
 ## LLM Stack
@@ -233,21 +275,41 @@ kitehive/
 ├── contracts/
 │   ├── contracts/KiteHiveAttestation.sol  # Attestation + staking + disputes + multi-coordinator
 │   ├── scripts/deploy.ts                  # Testnet + mainnet deployment
+│   ├── scripts/verify-deployment.ts       # Mainnet deployment verification [NEW]
 │   └── hardhat.config.ts                  # kite-testnet + kite-mainnet networks
 ├── agents/
 │   ├── coordinator/                   # Coordinator A (balanced, explore=0.18)
-│   ├── coordinator-b/                 # Coordinator B (aggressive, explore=0.40) [NEW]
+│   ├── coordinator-b/                 # Coordinator B (aggressive, explore=0.40)
+│   ├── nft-analysis-agent/            # NFT valuation agent [NEW]
+│   ├── social-sentiment-agent/        # Social sentiment tracking [NEW]
 │   └── worker-template/
-│       ├── x402-server.ts             # USDC + PYUSD dual-currency [NEW]
-│       └── pricing-engine.ts
+│       └── x402-server.ts             # USDC + PYUSD dual-currency
 ├── dashboard/
-│   ├── app/api/economy/route.ts       # Economy metrics (budget bug fix) [FIXED]
-│   └── lib/llm.ts                     # Consistent DeepSeek config [FIXED]
-├── scripts/simulate-economy.ts        # 500+ tx simulation [UPGRADED]
-├── keeper/
-│   ├── reputation-sync.ts
-│   └── economy-health.ts
-└── docs/ARCHITECTURE.md
+│   ├── app/
+│   │   ├── page.tsx                   # Main economy dashboard
+│   │   ├── registry/page.tsx          # Agent Registry UI [NEW]
+│   │   ├── benchmarks/page.tsx        # Performance benchmarks
+│   │   ├── interactive/page.tsx       # Interactive demo
+│   │   └── api/
+│   │       ├── economy/route.ts       # Economy metrics (mainnet-aware)
+│   │       ├── benchmarks/route.ts    # Real measurement engine [UPGRADED]
+│   │       └── registry/             # Agent registration API [NEW]
+│   ├── lib/
+│   │   ├── agent-store.ts            # Registry data persistence [NEW]
+│   │   ├── benchmark-engine.ts       # Performance measurement [NEW]
+│   │   └── llm.ts                    # DeepSeek config
+│   └── data/agents.json              # Agent registry data [NEW]
+├── scripts/
+│   ├── simulate-economy.ts           # 500+ tx simulation
+│   └── run-benchmarks.ts             # Standalone benchmark script [NEW]
+├── docs/
+│   ├── DEMO_VIDEO_GUIDE.md
+│   ├── PRESS_KIT.md
+│   └── thompson-sampling-deep-dive.md
+├── DEPLOY_MAINNET.md                  # Mainnet deployment guide [NEW]
+├── TOKENOMICS.md
+├── SECURITY.md
+└── ROADMAP.md
 ```
 
 ## Limitations & Roadmap

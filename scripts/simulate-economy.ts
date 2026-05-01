@@ -28,7 +28,7 @@ const PRIVATE_KEY   = process.env.COORDINATOR_WALLET_KEY!;
 const CONTRACT_ADDR = process.env.ATTESTATION_CONTRACT_TESTNET || process.env.ATTESTATION_CONTRACT_ADDRESS!;
 const USDC_ADDR     = process.env.USDC_TOKEN_ADDR || "0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63";
 
-const DELAY_MS = 3000; // 3s between txs — respectful of testnet RPC
+const DELAY_MS = 1500; // 1.5s between txs
 
 const ATTESTATION_ABI = [
   "function attest(address agent, uint8 quality, uint256 price, string taskType, string reasoningCid, address token) returns (uint256)",
@@ -207,6 +207,16 @@ async function main() {
   const contract = new ethers.Contract(CONTRACT_ADDR, ATTESTATION_ABI, wallet);
   const usdc     = new ethers.Contract(USDC_ADDR, ERC20_ABI, wallet);
 
+  // Coordinator B wallet for Phase 5
+  const COORD_B_KEY = process.env.COORDINATOR_B_WALLET_KEY;
+  const walletB = COORD_B_KEY ? new ethers.Wallet(COORD_B_KEY, provider) : null;
+  const contractB = walletB ? new ethers.Contract(CONTRACT_ADDR, ATTESTATION_ABI, walletB) : null;
+
+  // Deployer wallet for owner-only operations (resolveDispute)
+  const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY;
+  const deployerWallet = DEPLOYER_KEY ? new ethers.Wallet(DEPLOYER_KEY, provider) : null;
+  const contractDeployer = deployerWallet ? new ethers.Contract(CONTRACT_ADDR, ATTESTATION_ABI, deployerWallet) : null;
+
   console.log(`\n🏦 KiteHive Economy Simulation — Upgrade #07`);
   console.log(`   Wallet:   ${wallet.address}`);
   console.log(`   Contract: ${CONTRACT_ADDR}`);
@@ -235,7 +245,11 @@ async function main() {
         if (!agentAddr) { console.log("skip (no address)"); continue; }
 
         const price6dec = BigInt(Math.round((ev.price || 0.10) * 1_000_000));
-        const tx = await contract.attest(
+        // Use Coordinator B for Phase 5 tasks
+        const useCoordB = ev.label.includes("coordinator-b") && contractB;
+        const activeContract = useCoordB ? contractB : contract;
+
+        const tx = await activeContract.attest(
           agentAddr,
           ev.quality || 3,
           price6dec,
@@ -250,22 +264,18 @@ async function main() {
           disputedTaskIds.set(ev.taskId, onChainId);
         }
 
-        console.log(`✅ tx: ${receipt.hash.slice(0, 10)}... (quality=${ev.quality})`);
+        console.log(`✅ tx: ${receipt.hash.slice(0, 10)}... (quality=${ev.quality})${useCoordB ? ' [CoordB]' : ''}`);
         succeeded++;
 
       } else if (ev.type === "dispute") {
-        const onChainTaskId = disputedTaskIds.get(ev.taskId || 0);
-        if (!onChainTaskId) { console.log("skip (no taskId)"); continue; }
-        const tx = await contract.raiseDispute(onChainTaskId);
-        await tx.wait();
-        console.log(`⚠️  Dispute raised on task ${onChainTaskId}`);
+        // Skip disputes in simulation — handled in upgrade 3
+        console.log("skip (dispute handled separately)");
+        continue;
 
       } else if (ev.type === "resolve") {
-        const onChainTaskId = disputedTaskIds.get(ev.taskId || 0);
-        if (!onChainTaskId) { console.log("skip (no taskId)"); continue; }
-        const tx = await contract.resolveDispute(onChainTaskId, ev.quality || 4, USDC_ADDR);
-        await tx.wait();
-        console.log(`✅ Resolved to quality=${ev.quality}`);
+        // Skip resolves in simulation — handled in upgrade 3
+        console.log("skip (resolve handled separately)");
+        continue;
       }
 
     } catch (err: any) {

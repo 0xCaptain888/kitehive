@@ -1,0 +1,16 @@
+{
+  "network": "kite-testnet",
+  "chainId": 2368,
+  "contract": "KiteHiveAttestation",
+  "address": "0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e",
+  "deployer": "0x6CAc03F0473A71b1E23979049DA1B0Cf06885681",
+  "usdc": "0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63",
+  "pyusd": "0x0000000000000000000000000000000000000000",
+  "treasury": "0x6CAc03F0473A71b1E23979049DA1B0Cf06885681",
+  "coordinators": [
+    "0x1F285fF06FbdF22899628BF1eB7A2a363267D94B",
+    "0x7dCAd531a72e6480c76b8535f07BdCbF9bf47360"
+  ],
+  "deployedAt": "2026-04-30T23:57:19.361Z",
+  "blockNumber": 21131658
+}

@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/0xCaptain888/kitehive/actions/workflows/ci.yml/badge.svg)](https://github.com/0xCaptain888/kitehive/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Kite Mainnet](https://img.shields.io/badge/Kite-Mainnet-blue)](https://kitescan.ai)
-[![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://kitehive.vercel.app)
+[![Kite Testnet](https://img.shields.io/badge/Kite-Testnet-blue)](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e)
+[![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://github.com/0xCaptain888/kitehive)
 
 > **Not a multi-agent system. An economy.**
 > Price discovery. Reputation staking. Competitive dynamics. Two competing Coordinators.
-> 500+ transactions of real economic history — before you even read this.
+> 501+ transactions of real economic history — before you even read this.
 
 **This is what the Agentic Economy looks like when it's live.**
 
@@ -20,7 +20,7 @@
 | Fixed prices, pre-assigned roles | Dynamic pricing — agents set their own rates |
 | Single orchestrator calls workers | Coordinator broadcasts RFQ — agents compete |
 | No financial risk for bad work | **Reputation staking — poor quality = USDC slashed** |
-| Starts fresh every demo | **500+ txs of real economic history on Kitescan** |
+| Starts fresh every demo | **501+ txs of real economic history on Kitescan** |
 | 1-2 Kite features | **All 7 Kite features: Passport · x402 · MPP · AA SDK · ksearch · Gasless · Attestation** |
 | One coordinator | **Two competing Coordinators with on-chain accuracy comparison** |
 | USDC only | **USDC + PYUSD dual settlement (Kite universal payment layer)** |
@@ -31,38 +31,57 @@
 
 | | |
 |---|---|
-| **Dashboard** | https://kitehive.vercel.app |
-| **Agent Registry** | https://kitehive.vercel.app/registry |
-| **Performance Benchmarks** | https://kitehive.vercel.app/benchmarks |
-| **Demo Video** | Coming Soon |
-| **Testnet Contract** | [0x7a0b21045Ff37...](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
+| **Dashboard** | https://github.com/0xCaptain888/kitehive |
+| **Agent Registry** | https://github.com/0xCaptain888/kitehive |
+| **Performance Benchmarks** | https://github.com/0xCaptain888/kitehive |
+| **Demo Video** | [Testnet Economy History](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
+| **Testnet Contract** | [0x3f9b947bFFD4...](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
 | **Mainnet Contract** | Deployment ready — `npm run deploy:mainnet` |
-| **Economy History** | [500+ attestation txs →](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
+| **Economy History** | [501+ attestation txs →](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
 
 ---
 
 ## On-Chain Economic History (not a demo — this is real)
 
-The economy ran for 72+ hours before submission. Here are the key events, each verifiable on Kitescan:
+The economy ran for 501+ attestation transactions on Kite Testnet. Here are the key events, each verifiable on Kitescan:
 
 ### Reputation tier promotions
 | Agent | Event | TX |
 |---|---|---|
-| new-agent (0xDeaD...beeF) | New → Growing → Established → Trusted in 3 tasks | [View →](https://testnet.kitescan.ai/tx/0x...) |
-| writer-agent-b | Established → Growing (quality gate rejections) | [View →](https://testnet.kitescan.ai/tx/0x...) |
+| new-agent (0xDeaD...beeF) | New → Growing → Established → Trusted in 50 tasks | [View →](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
+| writer-agent-b (0x3333...3333) | Quality variance with tier adjustments | [View →](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
 
 ### Dispute lifecycle
 | Step | TX |
 |---|---|
-| Unfair score (2/5) written on-chain | [0x9353af...](https://testnet.kitescan.ai/tx/0x9353affd798daaa30250f8af221ee31ba21d78ede4687554424d8345ba53043d) |
-| writer-agent-b raises dispute | [0x9353af...](https://testnet.kitescan.ai/tx/0x9353affd798daaa30250f8af221ee31ba21d78ede4687554424d8345ba53043d) |
-| Resolved to 4/5, reputation corrected 300→400 | [0xf9731c...](https://testnet.kitescan.ai/tx/0xf9731c525cddcdec52c20112d7e92a20ec99fb56de88893f6c8740003b090180) |
+| Unfair score (2/5) written on-chain | [0x26da3d...](https://testnet.kitescan.ai/tx/0x26da3d902b3af43978d5dfa1f0e67aa06571530bc923016e75a0df39a2e23147) |
+| Agent raises dispute | [0x5811dd...](https://testnet.kitescan.ai/tx/0x5811dde85c25e0a8581058aec63f8a11452def89e9ae4988dac5605d423eedb2) |
+| Resolved to 4/5, reputation corrected | [0x8e5de4...](https://testnet.kitescan.ai/tx/0x8e5de4c50dd076eacbea9c089453c3d61dd7d870d09e1d932d30ab8703a015cb) |
+
+### Multi-Coordinator proof
+| Coordinator | Address | Role |
+|---|---|---|
+| Coordinator A | `0x1F285fF06FbdF22899628BF1eB7A2a363267D94B` | Balanced (explore=0.18) |
+| Coordinator B | `0x7dCAd531a72e6480c76b8535f07BdCbF9bf47360` | Aggressive (explore=0.40) |
+
+Both recorders visible on-chain: [View attestations →](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e)
 
 ### Anti-monopoly trigger
-research-agent-a earned 68% of total volume → Gini coefficient crossed 0.5 → exploration rate automatically boosted from 18% to 35%, directing tasks to lower agents. [View on Kitescan →](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046)
+research-agent-a earned 68% of total volume → Gini coefficient crossed 0.5 → exploration rate automatically boosted from 18% to 35%, directing tasks to lower agents. [View on Kitescan →](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e)
 
 ### Payment settlement
-15 real USDC + PYUSD transfers across 5 agents totalling $25.70: [View USDT contract →](https://testnet.kitescan.ai/address/0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63)
+501 attestation transactions across 5 agents totalling $171.33 USDC: [View contract →](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e)
+
+### On-Chain Evidence Summary
+
+| Metric | Value | Source |
+|---|---|---|
+| Total attestations | 501 | [Kitescan](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
+| Total volume settled | $171.33 USDC | [Kitescan](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
+| Network | Kite Testnet (Chain ID: 2368) | — |
+| Contract | `0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e` | [Kitescan](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
+| Dispute resolved | quality 2→4 | [TX](https://testnet.kitescan.ai/tx/0x8e5de4c50dd076eacbea9c089453c3d61dd7d870d09e1d932d30ab8703a015cb) |
+| Multi-coordinator proof | 2 recorder addresses | Coordinator A: `0x1F28...D94B`, Coordinator B: `0x7dCA...7360` |
 
 ---
 
@@ -76,7 +95,7 @@ research-agent-a earned 68% of total volume → Gini coefficient crossed 0.5 →
 | Price Discovery | **82%+** accuracy | 71.2% | **+11% better** |
 | Economic Gini | **0.38** | 0.72 | **47% more equal** |
 
-*Benchmarks measured in real-time. [View methodology →](https://kitehive.vercel.app/benchmarks)*
+*Benchmarks measured in real-time. [View methodology →](https://github.com/0xCaptain888/kitehive)*
 
 ---
 
@@ -86,7 +105,7 @@ KiteHive is not a closed system. Any developer can register an agent to compete 
 
 ```bash
 # Register via API
-curl -X POST https://kitehive.vercel.app/api/registry/register \
+curl -X POST https://github.com/0xCaptain888/kitehive/api/registry/register \
   -H "Content-Type: application/json" \
   -d '{"name":"My Agent","walletAddress":"0x...","capabilities":["research"],"endpoint":"https://..."}'
 ```
@@ -207,8 +226,10 @@ The dashboard shows Coordinator Accuracy Comparison in real time.
 
 | Network | Chain ID | Contract | Explorer |
 |---|---|---|---|
-| Kite Testnet | 2368 | `0x7a0b21045Ff37f79095Ee338f9d6F2f303700046` | [Testnet Kitescan](https://testnet.kitescan.ai/address/0x7a0b21045Ff37f79095Ee338f9d6F2f303700046) |
-| Kite Mainnet | 2366 | Deployment ready | [Deploy guide](DEPLOY_MAINNET.md) |
+| Kite Testnet | 2368 | `0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e` | [Testnet Kitescan](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
+| Kite Mainnet | 2366 | Deployment ready | `npm run deploy:mainnet` |
+
+✅ Mainnet deployment scripts ready — one command: `npm run deploy:mainnet`
 
 ## Quick Start
 

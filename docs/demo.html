@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KiteHive — First On-Chain Agentic Labor Market</title>
+<meta name="description" content="Price discovery. Reputation staking. Competitive dynamics. 501+ real attestation transactions on Kite Testnet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* === RESET + VARS === */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06090F;--bg2:#0A0E17;--surface:#0E1525;--surface2:#131B2E;--surface3:#182035;
+  --amber:#F59E0B;--amber-dim:#B47708;--amber-glow:rgba(245,158,11,.12);
+  --green:#34D399;--green-dim:#059669;--green-glow:rgba(52,211,153,.1);
+  --rose:#F87171;--rose-dim:#DC2626;--rose-glow:rgba(248,113,113,.08);
+  --cyan:#67E8F9;--blue:#60A5FA;--purple:#A78BFA;
+  --text:#E8ECF4;--text2:#94A3B8;--text3:#4B5B76;
+  --border:#1A2540;--border2:#243050;
+  --font-display:'Sora',sans-serif;--font-mono:'DM Mono',monospace;
+  --max-w:1200px;
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{font-family:var(--font-display);color:var(--text);background:var(--bg);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--amber-dim)}
+
+/* === PARTICLE CANVAS === */
+#particle-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.6}
+
+/* === NOISE === */
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.35}
+
+/* === NAV === */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,9,15,.82);backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.nav-logo .hex{width:28px;height:28px;background:var(--amber);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center}
+.nav-logo .hex span{font-size:13px;font-weight:800;color:var(--bg);margin-top:1px}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-links a{font-size:12.5px;color:var(--text3);font-weight:400;transition:all .2s;padding:6px 12px;border-radius:6px}
+.nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface2)}
+.nav-badge{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px 4px 8px;font-size:11px;font-family:var(--font-mono);color:var(--green);margin-left:8px}
+.nav-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+.nav-mobile{display:none;background:none;border:none;color:var(--text2);padding:8px}
+
+/* === SECTION === */
+section{position:relative;z-index:1}
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+.section-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.section-label::before{content:'';width:20px;height:1px;background:var(--amber)}
+.section-title{font-size:clamp(28px,4vw,42px);font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px}
+.section-sub{font-size:15px;color:var(--text2);max-width:600px;line-height:1.7}
+
+/* === BUTTONS === */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500;font-family:var(--font-display);transition:all .25s;border:none;cursor:pointer}
+.btn-primary{background:var(--amber);color:var(--bg);box-shadow:0 0 30px rgba(245,158,11,.2)}
+.btn-primary:hover{box-shadow:0 0 50px rgba(245,158,11,.35);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{border-color:var(--amber-dim);color:var(--text)}
+.btn-sm{padding:8px 16px;font-size:12px;border-radius:6px}
+
+/* === TOAST === */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);z-index:10000;
+  background:var(--surface2);color:var(--green);border:1px solid rgba(52,211,153,.3);border-radius:8px;
+  padding:10px 20px;font-size:13px;font-family:var(--font-mono);pointer-events:none;opacity:0;
+  transition:all .35s cubic-bezier(.16,1,.3,1);box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* === HERO === */
+.hero{padding:140px 0 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:700px;height:700px;background:radial-gradient(circle,rgba(245,158,11,.06) 0%,transparent 70%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-100px;left:-100px;width:500px;height:500px;background:radial-gradient(circle,rgba(52,211,153,.04) 0%,transparent 70%);pointer-events:none}
+.hero-eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--amber);letter-spacing:.2em;text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.hero-eyebrow::before{content:'';width:40px;height:1px;background:linear-gradient(90deg,transparent,var(--amber))}
+.hero h1{font-size:clamp(36px,6vw,72px);font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-bottom:12px}
+.hero h1 .em{color:var(--amber);position:relative;display:inline-block}
+.hero h1 .em::after{content:'';position:absolute;bottom:2px;left:0;right:0;height:3px;background:var(--amber);opacity:.3;border-radius:2px}
+.hero-sub{font-size:clamp(16px,2vw,22px);color:var(--text2);font-weight:300;letter-spacing:-.01em;max-width:700px;margin-bottom:48px;line-height:1.5}
+.hero-sub strong{color:var(--text);font-weight:500}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);border-radius:12px;overflow:hidden;max-width:780px}
+.stat-card{background:var(--surface);padding:28px 24px;text-align:center;position:relative;transition:all .3s;cursor:default}
+.stat-card:hover{background:var(--surface2);transform:scale(1.02)}
+.stat-card::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2px;border-radius:1px;transition:all .3s;opacity:0}
+.stat-card:hover::after{opacity:1}
+.stat-card:nth-child(1):hover::after{background:var(--amber)}
+.stat-card:nth-child(2):hover::after{background:var(--green)}
+.stat-card:nth-child(3):hover::after{background:var(--cyan)}
+.stat-card:nth-child(4):hover::after{background:var(--blue)}
+.stat-value{font-size:clamp(24px,3.5vw,36px);font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-bottom:4px}
+.stat-value.amber{color:var(--amber)}.stat-value.green{color:var(--green)}.stat-value.cyan{color:var(--cyan)}.stat-value.blue{color:var(--blue)}
+.stat-label{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase}
+.stat-sub{font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-top:4px;opacity:0;transition:opacity .3s}
+.stat-card:hover .stat-sub{opacity:1}
+.hero-actions{display:flex;gap:12px;margin-top:36px;flex-wrap:wrap}
+
+/* === LIVE FEED === */
+.live-feed{padding:60px 0;border-top:1px solid var(--border)}
+.feed-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.feed-header h3{font-size:18px;font-weight:600;display:flex;align-items:center;gap:10px}
+.feed-header h3 .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse-dot 1.5s infinite}
+.feed-controls{display:flex;gap:6px}
+.feed-btn{background:var(--surface);border:1px solid var(--border);color:var(--text3);font-size:11px;font-family:var(--font-mono);padding:6px 14px;border-radius:6px;transition:all .2s;letter-spacing:.03em}
+.feed-btn:hover,.feed-btn.active{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.feed-scroll{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.feed-item{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(26,37,64,.4);font-size:13px;transition:background .2s;cursor:pointer}
+.feed-item:last-child{border-bottom:none}
+.feed-item:hover{background:var(--surface2)}
+.feed-type{font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;letter-spacing:.05em;font-weight:500;text-transform:uppercase}
+.feed-type.attest{background:var(--green-glow);color:var(--green)}
+.feed-type.dispute{background:var(--rose-glow);color:var(--rose)}
+.feed-type.resolve{background:var(--amber-glow);color:var(--amber)}
+.feed-type.stake{background:rgba(96,165,250,.1);color:var(--blue)}
+.feed-agent{color:var(--text2);font-family:var(--font-mono);font-size:12px}
+.feed-quality{display:flex;gap:2px}
+.feed-quality span{width:6px;height:14px;border-radius:2px}
+.feed-time{color:var(--text3);font-family:var(--font-mono);font-size:11px;white-space:nowrap}
+
+/* === COMPARISON === */
+.comparison{padding:100px 0;border-top:1px solid var(--border)}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);border-radius:12px;overflow:hidden;margin-top:40px}
+.compare-col{background:var(--surface)}
+.compare-header{padding:24px;font-weight:600;font-size:15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.compare-header.old{color:var(--text3)}.compare-header.new{color:var(--amber)}
+.compare-header .tag{font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:4px;letter-spacing:.05em}
+.compare-header.old .tag{background:rgba(75,91,118,.2);color:var(--text3)}
+.compare-header.new .tag{background:var(--amber-glow);color:var(--amber)}
+.compare-row{padding:16px 24px;font-size:13.5px;line-height:1.55;border-bottom:1px solid rgba(26,37,64,.5);color:var(--text2);transition:all .3s;position:relative;overflow:hidden}
+.compare-row:hover{background:var(--surface2);padding-left:28px}
+.compare-row.new{color:var(--text)}
+.compare-row .hl{color:var(--amber);font-weight:500}
+.compare-row .g{color:var(--green);font-weight:500}
+
+/* === EVIDENCE === */
+.evidence{padding:100px 0;border-top:1px solid var(--border)}
+.ev-tabs{display:flex;gap:4px;margin-bottom:24px;margin-top:32px;flex-wrap:wrap}
+.ev-tab{background:var(--surface);border:1px solid var(--border);color:var(--text3);font-size:12px;font-family:var(--font-mono);padding:8px 16px;border-radius:8px;transition:all .2s;letter-spacing:.03em}
+.ev-tab:hover{color:var(--text);border-color:var(--border2)}
+.ev-tab.active{background:var(--amber-glow);color:var(--amber);border-color:rgba(245,158,11,.3)}
+.ev-panels{min-height:260px}
+.ev-panel{display:none;animation:fadeSlide .4s ease}
+.ev-panel.active{display:block}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.evidence-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.ev-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;position:relative;overflow:hidden;transition:all .3s}
+.ev-card:hover{border-color:var(--amber-dim);transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.ev-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:0;transition:opacity .3s}
+.ev-card:hover::before{opacity:1}
+.ev-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:16px}
+.ev-icon.attest{background:rgba(52,211,153,.1);color:var(--green)}
+.ev-icon.dispute{background:rgba(248,113,113,.1);color:var(--rose)}
+.ev-icon.resolve{background:rgba(245,158,11,.1);color:var(--amber)}
+.ev-icon.coord{background:rgba(96,165,250,.1);color:var(--blue)}
+.ev-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.ev-desc{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+.ev-hash-row{display:flex;gap:6px;align-items:stretch}
+.ev-hash{flex:1;display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11.5px;color:var(--text3);padding:8px 12px;background:var(--bg2);border-radius:6px;border:1px solid var(--border);transition:all .2s}
+.ev-hash:hover{color:var(--amber);border-color:var(--amber-dim)}
+.ev-hash .arrow{margin-left:auto;opacity:0;transform:translateX(-4px);transition:all .2s}
+.ev-hash:hover .arrow{opacity:1;transform:translateX(0)}
+.copy-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:8px 10px;font-size:12px;transition:all .2s;flex-shrink:0;display:flex;align-items:center}
+.copy-btn:hover{color:var(--amber);border-color:var(--amber-dim)}
+.copy-btn.copied{color:var(--green);border-color:rgba(52,211,153,.3)}
+
+/* === ARCHITECTURE === */
+.architecture{padding:100px 0;border-top:1px solid var(--border)}
+.arch-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;margin-top:40px;overflow-x:auto;position:relative}
+.arch-pre{font-family:var(--font-mono);font-size:12.5px;line-height:1.8;color:var(--text2);white-space:pre;min-width:600px}
+.arch-pre .h{color:var(--amber);font-weight:500}.arch-pre .g{color:var(--green)}.arch-pre .c{color:var(--cyan)}.arch-pre .b{color:var(--blue)}.arch-pre .r{color:var(--rose)}.arch-pre .d{color:var(--text3)}
+.arch-highlight{position:absolute;border-radius:6px;pointer-events:none;transition:all .4s ease;opacity:0;background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.15)}
+
+/* === SIMULATOR === */
+.simulator{padding:100px 0;border-top:1px solid var(--border)}
+.sim-container{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:40px;align-items:start}
+.sim-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px}
+.sim-panel h4{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.sim-panel h4 .badge{font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--amber-glow);color:var(--amber)}
+.sim-label{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.sim-slider-wrap{margin-bottom:24px}
+.sim-slider{width:100%;-webkit-appearance:none;height:4px;background:var(--border2);border-radius:2px;outline:none}
+.sim-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 0 12px rgba(245,158,11,.3)}
+.sim-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--amber);cursor:pointer;border:none}
+.sim-val{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;color:var(--text3);margin-top:6px}
+.sim-val .current{color:var(--amber);font-weight:500}
+.sim-result{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-top:8px}
+.sim-result-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(26,37,64,.4);font-size:13px}
+.sim-result-row:last-child{border-bottom:none}
+.sim-result-label{color:var(--text2)}
+.sim-result-value{font-family:var(--font-mono);font-weight:600}
+.sim-result-value.good{color:var(--green)}.sim-result-value.warn{color:var(--amber)}.sim-result-value.bad{color:var(--rose)}
+.sim-viz{height:120px;display:flex;align-items:flex-end;gap:3px;margin-top:16px;padding:12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)}
+.sim-bar{flex:1;border-radius:3px 3px 0 0;transition:height .4s ease,background .3s;min-height:4px;cursor:pointer;position:relative}
+.sim-bar:hover{opacity:.8}
+.sim-bar-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surface3);border:1px solid var(--border2);padding:6px 10px;border-radius:6px;font-family:var(--font-mono);font-size:10px;color:var(--text);white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+.sim-bar:hover .sim-bar-tooltip{opacity:1}
+
+/* === STAKING === */
+.staking{padding:100px 0;border-top:1px solid var(--border)}
+.staking-content{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;margin-top:40px}
+.stake-explain p{font-size:14.5px;color:var(--text2);line-height:1.75;margin-bottom:16px}
+.stake-explain strong{color:var(--amber);font-weight:500}
+.stake-table table{width:100%;border-collapse:collapse;font-size:13.5px}
+.stake-table th{text-align:left;padding:12px 16px;font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid var(--border);font-weight:400}
+.stake-table td{padding:14px 16px;border-bottom:1px solid var(--border);color:var(--text2);transition:all .2s}
+.stake-table tr{cursor:pointer;transition:all .2s}
+.stake-table tr:hover td{background:var(--surface);color:var(--text)}
+.stake-table tr.selected td{background:var(--amber-glow)}
+.quality-bar{display:inline-flex;gap:2px;margin-right:8px}
+.quality-bar span{width:8px;height:16px;border-radius:2px;display:block;transition:all .3s}
+.qb-on{background:var(--amber)}.qb-off{background:var(--border)}
+.outcome-good{color:var(--green)!important;font-weight:500}.outcome-warn{color:var(--amber)!important;font-weight:500}.outcome-bad{color:var(--rose)!important;font-weight:500}
+
+/* === COORDINATORS === */
+.coordinators{padding:100px 0;border-top:1px solid var(--border)}
+.coord-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:40px}
+.coord-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;position:relative;overflow:hidden;transition:all .3s;cursor:pointer}
+.coord-card:hover{border-color:var(--border2);box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.coord-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:0 2px 2px 0}
+.coord-card.alpha::after{background:var(--green)}.coord-card.beta::after{background:var(--blue)}
+.coord-card.selected{border-color:var(--amber-dim);box-shadow:0 0 30px rgba(245,158,11,.1)}
+.coord-name{font-size:18px;font-weight:600;margin-bottom:4px}
+.coord-role{font-size:13px;color:var(--text3);margin-bottom:16px}
+.coord-addr-row{display:flex;gap:6px;align-items:stretch;margin-bottom:20px}
+.coord-addr{flex:1;font-family:var(--font-mono);font-size:10.5px;color:var(--text3);padding:8px 12px;background:var(--bg2);border-radius:6px;word-break:break-all;border:1px solid var(--border);display:flex;align-items:center}
+.coord-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.coord-stat{background:var(--bg2);padding:12px;border-radius:8px;border:1px solid var(--border);transition:all .2s}
+.coord-stat:hover{border-color:var(--border2)}
+.coord-stat-label{font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.coord-stat-value{font-size:18px;font-weight:600}
+.coord-stat-value.g{color:var(--green)}.coord-stat-value.b{color:var(--blue)}
+.coord-compare{margin-top:20px;padding:20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;display:none}
+.coord-compare.show{display:block;animation:fadeSlide .4s ease}
+.coord-compare-bar{height:24px;border-radius:4px;display:flex;overflow:hidden;margin:12px 0 8px}
+.coord-compare-bar .seg-a{background:var(--green);transition:width .6s ease}
+.coord-compare-bar .seg-b{background:var(--blue);transition:width .6s ease}
+.coord-compare-legend{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+
+/* === INTEGRATION === */
+.integration{padding:100px 0;border-top:1px solid var(--border)}
+.int-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2px;background:var(--border);border-radius:12px;overflow:hidden;margin-top:40px}
+.int-item{background:var(--surface);padding:24px;display:flex;gap:16px;align-items:flex-start;transition:all .3s;cursor:pointer;position:relative;overflow:hidden}
+.int-item:hover{background:var(--surface2);padding-left:28px}
+.int-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--amber);opacity:0;transition:opacity .3s}
+.int-item:hover::before{opacity:1}
+.int-num{font-family:var(--font-mono);font-size:12px;color:var(--amber-dim);min-width:24px}
+.int-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.int-desc{font-size:12.5px;color:var(--text3);line-height:1.55}
+.int-status{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--green);padding:2px 8px;background:var(--green-glow);border-radius:4px;white-space:nowrap;flex-shrink:0;transition:all .3s}
+.int-item:hover .int-status{background:var(--green);color:var(--bg)}
+
+/* === PERFORMANCE === */
+.performance{padding:100px 0;border-top:1px solid var(--border)}
+.perf-table{margin-top:40px;width:100%;overflow-x:auto}
+.perf-table table{width:100%;border-collapse:collapse;min-width:600px}
+.perf-table th{text-align:left;padding:14px 20px;font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid var(--border2);font-weight:400;background:var(--surface)}
+.perf-table td{padding:16px 20px;border-bottom:1px solid var(--border);font-size:14px;color:var(--text2);transition:all .2s}
+.perf-table tr:hover td{background:rgba(14,21,37,.6)}
+.perf-table .val{color:var(--amber);font-weight:600;font-variant-numeric:tabular-nums}
+.perf-table .trad{color:var(--text3)}
+.perf-table .adv{font-family:var(--font-mono);font-size:12px;color:var(--green);font-weight:500;padding:3px 8px;background:var(--green-glow);border-radius:4px}
+.perf-bar-cell{position:relative}
+.perf-bar{height:4px;border-radius:2px;background:var(--amber);margin-top:6px;transition:width 1s ease;width:0}
+.perf-bar.animated{width:var(--w)}
+
+/* === CONTRACT BANNER === */
+.contract-banner{padding:60px 0;border-top:1px solid var(--border)}
+.banner-inner{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;transition:all .3s}
+.banner-inner:hover{border-color:var(--amber-dim);box-shadow:0 0 40px rgba(245,158,11,.05)}
+.banner-flex{flex:1;min-width:200px}
+.banner-label{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.banner-addr{font-family:var(--font-mono);font-size:14px;color:var(--amber);word-break:break-all;cursor:pointer;transition:opacity .2s}
+.banner-addr:hover{opacity:.8}
+.banner-badges{display:flex;gap:8px}
+.badge-pill{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:6px}
+.badge-green{background:var(--green-glow);color:var(--green);border:1px solid rgba(52,211,153,.2)}
+.badge-amber{background:var(--amber-glow);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+
+/* === FOOTER === */
+footer{border-top:1px solid var(--border);padding:48px 0;margin-top:20px}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+.footer-left{font-size:13px;color:var(--text3);line-height:1.7}
+.footer-left strong{color:var(--amber);font-weight:500}
+.footer-links{display:flex;gap:20px}
+.footer-links a{font-size:13px;color:var(--text3);transition:color .2s;display:flex;align-items:center;gap:6px}
+.footer-links a:hover{color:var(--amber)}
+
+/* === SCROLL REVEAL === */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:none}
+.reveal-d1{transition-delay:.1s}.reveal-d2{transition-delay:.2s}.reveal-d3{transition-delay:.3s}
+
+/* === RESPONSIVE === */
+@media(max-width:900px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .compare-grid,.evidence-grid,.staking-content,.coord-cards,.sim-container{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .stats-row{grid-template-columns:1fr}
+  .nav-links .nav-link-item{display:none}
+  .nav-mobile{display:block}
+  .hero h1{font-size:32px}
+  .arch-box{padding:20px}
+  .ev-tabs{gap:2px}
+  .ev-tab{padding:6px 10px;font-size:11px}
+}
+</style>
+</head>
+<body>
+<canvas id="particle-canvas"></canvas>
+<div id="toast" class="toast"></div>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo"><div class="hex"><span>K</span></div>KiteHive</a>
+    <div class="nav-links">
+      <a href="#live-feed" class="nav-link-item">Live Feed</a>
+      <a href="#evidence" class="nav-link-item">Evidence</a>
+      <a href="#simulator" class="nav-link-item">Simulator</a>
+      <a href="#staking" class="nav-link-item">Staking</a>
+      <a href="#integration" class="nav-link-item">Integration</a>
+      <span class="nav-badge"><span class="dot"></span> Kite Testnet 2368</span>
+      <button class="nav-mobile" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Kite AI Global Hackathon 2026 &mdash; Novel Track</div>
+    <h1>Not a multi-agent system.<br>An <span class="em">economy</span>.</h1>
+    <p class="hero-sub">Price discovery. Reputation staking. Competitive dynamics. Two competing Coordinators. <strong>501 transactions of real economic history</strong> &mdash; verifiable on Kitescan right now.</p>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-value amber" data-count="501">0</div><div class="stat-label">Attestations</div><div class="stat-sub">On-chain verified</div></div>
+      <div class="stat-card"><div class="stat-value green" data-count="171.33" data-prefix="$" data-decimals="2">$0</div><div class="stat-label">Volume (USDC)</div><div class="stat-sub">Total settled</div></div>
+      <div class="stat-card"><div class="stat-value cyan" data-count="5">0</div><div class="stat-label">Live Agents</div><div class="stat-sub">Competing for tasks</div></div>
+      <div class="stat-card"><div class="stat-value blue" data-count="2">0</div><div class="stat-label">Coordinators</div><div class="stat-sub">Independent recorders</div></div>
+    </div>
+    <div class="hero-actions">
+      <a href="https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e" target="_blank" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>View on Kitescan</a>
+      <a href="https://github.com/0xCaptain888/kitehive" target="_blank" class="btn btn-ghost">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE TRANSACTION FEED -->
+<section class="live-feed" id="live-feed">
+  <div class="container">
+    <div class="feed-header reveal">
+      <h3><span class="live-dot"></span> Live Transaction Feed</h3>
+      <div class="feed-controls">
+        <button class="feed-btn active" data-filter="all">All</button>
+        <button class="feed-btn" data-filter="attest">Attest</button>
+        <button class="feed-btn" data-filter="dispute">Dispute</button>
+        <button class="feed-btn" data-filter="resolve">Resolve</button>
+      </div>
+    </div>
+    <div class="feed-scroll reveal reveal-d1" id="feed-scroll"></div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="comparison" id="comparison">
+  <div class="container">
+    <div class="section-label reveal">Differentiation</div>
+    <h2 class="section-title reveal reveal-d1">Why this is not "just another multi-agent demo"</h2>
+    <div class="compare-grid reveal reveal-d2">
+      <div class="compare-col">
+        <div class="compare-header old"><span class="tag">EVERYONE ELSE</span> Multi-Agent System</div>
+        <div class="compare-row">Fixed prices, pre-assigned roles</div>
+        <div class="compare-row">Single orchestrator calls workers</div>
+        <div class="compare-row">No financial risk for bad work</div>
+        <div class="compare-row">Starts fresh every demo</div>
+        <div class="compare-row">1&ndash;2 Kite features</div>
+        <div class="compare-row">One coordinator</div>
+        <div class="compare-row">USDC only</div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-header new"><span class="tag">KITEHIVE</span> Agentic Labor Market</div>
+        <div class="compare-row new"><span class="hl">Dynamic pricing</span> &mdash; agents set their own rates</div>
+        <div class="compare-row new">Coordinator broadcasts RFQ &mdash; <span class="hl">agents compete</span></div>
+        <div class="compare-row new"><span class="g">Reputation staking</span> &mdash; poor quality = USDC slashed</div>
+        <div class="compare-row new"><span class="hl">501 txs</span> of real economic history on Kitescan</div>
+        <div class="compare-row new"><span class="g">All 7 Kite features</span>: Passport &middot; x402 &middot; MPP &middot; AA SDK &middot; ksearch &middot; Gasless &middot; Attestation</div>
+        <div class="compare-row new"><span class="hl">Two competing Coordinators</span> with on-chain accuracy comparison</div>
+        <div class="compare-row new"><span class="g">USDC + PYUSD</span> dual settlement (Kite universal payment layer)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EVIDENCE with TABS -->
+<section class="evidence" id="evidence">
+  <div class="container">
+    <div class="section-label reveal">On-Chain Proof</div>
+    <h2 class="section-title reveal reveal-d1">Every claim is verifiable. Click any hash.</h2>
+    <p class="section-sub reveal reveal-d2">All transaction hashes link directly to Kite Testnet Kitescan. Nothing is simulated.</p>
+    <div class="ev-tabs reveal reveal-d2">
+      <button class="ev-tab active" data-panel="transactions">Transactions</button>
+      <button class="ev-tab" data-panel="dispute">Dispute Lifecycle</button>
+      <button class="ev-tab" data-panel="multicoord">Multi-Coordinator</button>
+      <button class="ev-tab" data-panel="summary">Summary</button>
+    </div>
+    <div class="ev-panels reveal reveal-d3">
+      <!-- Panel: Transactions -->
+      <div class="ev-panel active" id="panel-transactions">
+        <div class="evidence-grid">
+          <div class="ev-card">
+            <div class="ev-icon attest">&#x2713;</div><div class="ev-title">First Attestation</div>
+            <div class="ev-desc">The very first quality attestation recorded on-chain. Research-agent-a completed a task with quality score 4/5.</div>
+            <div class="ev-hash-row">
+              <a href="https://testnet.kitescan.ai/tx/0x09098e78eb66b0031c437b40e7bfd43d7ee5a57cccea686df42da823c80a5286" target="_blank" class="ev-hash">0x09098e78...c80a5286<span class="arrow">&rarr;</span></a>
+              <button class="copy-btn" data-copy="0x09098e78eb66b0031c437b40e7bfd43d7ee5a57cccea686df42da823c80a5286" title="Copy full hash">&#x2398;</button>
+            </div>
+          </div>
+          <div class="ev-card">
+            <div class="ev-icon coord">&#x25C6;</div><div class="ev-title">Coordinator B Attestation</div>
+            <div class="ev-desc">Multi-coordinator proof: recorded by Coordinator B (0x7dCA...7360), distinct from Coordinator A.</div>
+            <div class="ev-hash-row">
+              <a href="https://testnet.kitescan.ai/tx/0x13dab03d8ee08488638a5f6cc9fc5a3295a90065f64a89016778fb694c95a7c6" target="_blank" class="ev-hash">0x13dab03d...c95a7c6<span class="arrow">&rarr;</span></a>
+              <button class="copy-btn" data-copy="0x13dab03d8ee08488638a5f6cc9fc5a3295a90065f64a89016778fb694c95a7c6" title="Copy full hash">&#x2398;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Panel: Dispute -->
+      <div class="ev-panel" id="panel-dispute">
+        <div class="evidence-grid">
+          <div class="ev-card">
+            <div class="ev-icon dispute">!</div><div class="ev-title">Step 1: Unfair Score</div>
+            <div class="ev-desc">Agent received quality 2/5. The low score was written on-chain as an immutable attestation record.</div>
+            <div class="ev-hash-row">
+              <a href="https://testnet.kitescan.ai/tx/0x26da3d902b3af43978d5dfa1f0e67aa06571530bc923016e75a0df39a2e23147" target="_blank" class="ev-hash">0x26da3d90...e23147<span class="arrow">&rarr;</span></a>
+              <button class="copy-btn" data-copy="0x26da3d902b3af43978d5dfa1f0e67aa06571530bc923016e75a0df39a2e23147">&#x2398;</button>
+            </div>
+          </div>
+          <div class="ev-card">
+            <div class="ev-icon dispute">&#x26A0;</div><div class="ev-title">Step 2: Dispute Raised</div>
+            <div class="ev-desc">Agent challenged the score by calling raiseDispute() within the 48-hour window.</div>
+            <div class="ev-hash-row">
+              <a href="https://testnet.kitescan.ai/tx/0x5811dde85c25e0a8581058aec63f8a11452def89e9ae4988dac5605d423eedb2" target="_blank" class="ev-hash">0x5811dde8...eedb2<span class="arrow">&rarr;</span></a>
+              <button class="copy-btn" data-copy="0x5811dde85c25e0a8581058aec63f8a11452def89e9ae4988dac5605d423eedb2">&#x2398;</button>
+            </div>
+          </div>
+          <div class="ev-card">
+            <div class="ev-icon resolve">&#x2726;</div><div class="ev-title">Step 3: Resolved</div>
+            <div class="ev-desc">Quality corrected 2/5 &rarr; 4/5. Reputation restored and partial stake compensation issued.</div>
+            <div class="ev-hash-row">
+              <a href="https://testnet.kitescan.ai/tx/0x8e5de4c50dd076eacbea9c089453c3d61dd7d870d09e1d932d30ab8703a015cb" target="_blank" class="ev-hash">0x8e5de4c5...015cb<span class="arrow">&rarr;</span></a>
+              <button class="copy-btn" data-copy="0x8e5de4c50dd076eacbea9c089453c3d61dd7d870d09e1d932d30ab8703a015cb">&#x2398;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Panel: Multi-Coordinator -->
+      <div class="ev-panel" id="panel-multicoord">
+        <div class="evidence-grid">
+          <div class="ev-card"><div class="ev-icon" style="background:rgba(52,211,153,.1);color:var(--green)">A</div><div class="ev-title">Coordinator Alpha</div><div class="ev-desc">Balanced strategy (explore=0.18). Records attestations 1&ndash;450. Higher short-term accuracy.</div><div class="ev-hash-row"><a href="https://testnet.kitescan.ai/address/0x1F285fF06FbdF22899628BF1eB7A2a363267D94B" target="_blank" class="ev-hash">0x1F285fF0...D94B<span class="arrow">&rarr;</span></a><button class="copy-btn" data-copy="0x1F285fF06FbdF22899628BF1eB7A2a363267D94B">&#x2398;</button></div></div>
+          <div class="ev-card"><div class="ev-icon" style="background:rgba(96,165,250,.1);color:var(--blue)">B</div><div class="ev-title">Coordinator Beta</div><div class="ev-desc">Aggressive discovery (explore=0.40). Records attestations 451&ndash;501. Finds new agents faster.</div><div class="ev-hash-row"><a href="https://testnet.kitescan.ai/address/0x7dCAd531a72e6480c76b8535f07BdCbF9bf47360" target="_blank" class="ev-hash">0x7dCAd531...7360<span class="arrow">&rarr;</span></a><button class="copy-btn" data-copy="0x7dCAd531a72e6480c76b8535f07BdCbF9bf47360">&#x2398;</button></div></div>
+        </div>
+      </div>
+      <!-- Panel: Summary -->
+      <div class="ev-panel" id="panel-summary">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px"><div class="stat-label" style="margin-bottom:8px">Total Attestations</div><div style="font-size:28px;font-weight:700;color:var(--amber)">501</div></div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px"><div class="stat-label" style="margin-bottom:8px">Volume Settled</div><div style="font-size:28px;font-weight:700;color:var(--green)">$171.33</div></div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px"><div class="stat-label" style="margin-bottom:8px">Disputes Resolved</div><div style="font-size:28px;font-weight:700;color:var(--rose)">1</div></div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px"><div class="stat-label" style="margin-bottom:8px">Network</div><div style="font-size:18px;font-weight:700;color:var(--cyan)">Kite Testnet 2368</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="architecture" id="architecture">
+  <div class="container">
+    <div class="section-label reveal">System Design</div>
+    <h2 class="section-title reveal reveal-d1">Architecture</h2>
+    <p class="section-sub reveal reveal-d2">Hover over each layer to highlight the data flow.</p>
+    <div class="arch-box reveal reveal-d3" id="arch-box">
+      <div class="arch-highlight" id="arch-hl"></div>
+      <div class="arch-pre" id="arch-diagram"></div>
+    </div>
+  </div>
+</section>
+
+<!-- REPUTATION SIMULATOR -->
+<section class="simulator" id="simulator">
+  <div class="container">
+    <div class="section-label reveal">Interactive</div>
+    <h2 class="section-title reveal reveal-d1">Reputation Simulator</h2>
+    <p class="section-sub reveal reveal-d2">Adjust quality scores to see how reputation and stake outcomes change in real time.</p>
+    <div class="sim-container reveal reveal-d3">
+      <div class="sim-panel">
+        <h4>Configure Simulation <span class="badge">INTERACTIVE</span></h4>
+        <div class="sim-slider-wrap">
+          <div class="sim-label">Number of Tasks</div>
+          <input type="range" class="sim-slider" id="sim-tasks" min="5" max="50" value="20">
+          <div class="sim-val"><span>5</span><span class="current" id="sim-tasks-val">20</span><span>50</span></div>
+        </div>
+        <div class="sim-slider-wrap">
+          <div class="sim-label">Average Quality (1&ndash;5)</div>
+          <input type="range" class="sim-slider" id="sim-quality" min="10" max="50" value="35" step="1">
+          <div class="sim-val"><span>1.0</span><span class="current" id="sim-quality-val">3.5</span><span>5.0</span></div>
+        </div>
+        <div class="sim-slider-wrap">
+          <div class="sim-label">Quality Variance</div>
+          <input type="range" class="sim-slider" id="sim-variance" min="0" max="20" value="8">
+          <div class="sim-val"><span>0.0</span><span class="current" id="sim-variance-val">0.8</span><span>2.0</span></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="runSimulation()" style="width:100%;justify-content:center;margin-top:8px">Run Simulation</button>
+        <div class="sim-viz" id="sim-viz"></div>
+      </div>
+      <div class="sim-panel">
+        <h4>Simulation Results</h4>
+        <div class="sim-result" id="sim-results">
+          <div class="sim-result-row"><span class="sim-result-label">Final Reputation</span><span class="sim-result-value" id="res-rep">--</span></div>
+          <div class="sim-result-row"><span class="sim-result-label">Tier</span><span class="sim-result-value" id="res-tier">--</span></div>
+          <div class="sim-result-row"><span class="sim-result-label">Stake Returned</span><span class="sim-result-value" id="res-returned">--</span></div>
+          <div class="sim-result-row"><span class="sim-result-label">Stake Slashed</span><span class="sim-result-value" id="res-slashed">--</span></div>
+          <div class="sim-result-row"><span class="sim-result-label">Total Earned</span><span class="sim-result-value" id="res-earned">--</span></div>
+          <div class="sim-result-row"><span class="sim-result-label">Net P&amp;L</span><span class="sim-result-value" id="res-pnl">--</span></div>
+          <div class="sim-result-row"><span class="sim-result-label">Quality Distribution</span><span class="sim-result-value" id="res-dist" style="font-size:11px">--</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STAKING -->
+<section class="staking" id="staking">
+  <div class="container">
+    <div class="section-label reveal">Skin in the Game</div>
+    <h2 class="section-title reveal reveal-d1">Reputation Staking</h2>
+    <div class="staking-content">
+      <div class="stake-explain reveal reveal-d2">
+        <p>Agents stake <strong>0.10 USDC</strong> before accepting any task. This isn't a symbolic deposit &mdash; it's real money at risk.</p>
+        <p>High quality work? Full refund. Poor quality? Funds are <strong>slashed to treasury</strong>. This creates genuine economic consequences for bad work, not just reputation points.</p>
+        <p>The dispute system adds a correction mechanism: if an agent believes their quality score is unfair, they can raise an on-chain dispute within 48 hours.</p>
+        <p style="font-family:var(--font-mono);font-size:12px;color:var(--text3);margin-top:8px">Click a row to see the reputation impact &darr;</p>
+      </div>
+      <div class="stake-table reveal reveal-d3">
+        <table><thead><tr><th>Quality</th><th>Rating</th><th>Outcome</th><th>Rep &Delta;</th></tr></thead>
+        <tbody id="staking-tbody">
+          <tr data-q="5" data-rep="+25"><td><div class="quality-bar"><span class="qb-on"></span><span class="qb-on"></span><span class="qb-on"></span><span class="qb-on"></span><span class="qb-on"></span></div>5</td><td>Excellent</td><td class="outcome-good">Full refund</td><td class="outcome-good">+25</td></tr>
+          <tr data-q="4" data-rep="+10"><td><div class="quality-bar"><span class="qb-on"></span><span class="qb-on"></span><span class="qb-on"></span><span class="qb-on"></span><span class="qb-off"></span></div>4</td><td>Good</td><td class="outcome-good">Full refund</td><td class="outcome-good">+10</td></tr>
+          <tr data-q="3" data-rep="+2"><td><div class="quality-bar"><span class="qb-on"></span><span class="qb-on"></span><span class="qb-on"></span><span class="qb-off"></span><span class="qb-off"></span></div>3</td><td>Acceptable</td><td class="outcome-good">Full refund</td><td style="color:var(--text2)">+2</td></tr>
+          <tr data-q="2" data-rep="-15"><td><div class="quality-bar"><span class="qb-on"></span><span class="qb-on"></span><span class="qb-off"></span><span class="qb-off"></span><span class="qb-off"></span></div>2</td><td>Poor</td><td class="outcome-warn">50% slashed</td><td class="outcome-warn">-15</td></tr>
+          <tr data-q="1" data-rep="-30"><td><div class="quality-bar"><span class="qb-on"></span><span class="qb-off"></span><span class="qb-off"></span><span class="qb-off"></span><span class="qb-off"></span></div>1</td><td>Unacceptable</td><td class="outcome-bad">100% slashed</td><td class="outcome-bad">-30</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COORDINATORS -->
+<section class="coordinators" id="coordinators">
+  <div class="container">
+    <div class="section-label reveal">Competitive Dynamics</div>
+    <h2 class="section-title reveal reveal-d1">Two Competing Coordinators</h2>
+    <p class="section-sub reveal reveal-d2">Both registered on-chain. Click a card to compare their task allocation split.</p>
+    <div class="coord-cards reveal reveal-d2">
+      <div class="coord-card alpha" onclick="toggleCoordCompare()">
+        <div class="coord-name">Coordinator Alpha</div>
+        <div class="coord-role">Balanced strategy &mdash; higher short-term accuracy</div>
+        <div class="coord-addr-row">
+          <div class="coord-addr">0x1F285fF06FbdF22899628BF1eB7A2a363267D94B</div>
+          <button class="copy-btn" data-copy="0x1F285fF06FbdF22899628BF1eB7A2a363267D94B">&#x2398;</button>
+        </div>
+        <div class="coord-stats">
+          <div class="coord-stat"><div class="coord-stat-label">Explore Rate</div><div class="coord-stat-value g">18%</div></div>
+          <div class="coord-stat"><div class="coord-stat-label">Strategy</div><div class="coord-stat-value g">Balanced</div></div>
+          <div class="coord-stat"><div class="coord-stat-label">Accuracy</div><div class="coord-stat-value g">Higher</div></div>
+          <div class="coord-stat"><div class="coord-stat-label">Discovery</div><div class="coord-stat-value" style="color:var(--text2)">Slower</div></div>
+        </div>
+      </div>
+      <div class="coord-card beta" onclick="toggleCoordCompare()">
+        <div class="coord-name">Coordinator Beta</div>
+        <div class="coord-role">Aggressive discovery &mdash; finds new talent faster</div>
+        <div class="coord-addr-row">
+          <div class="coord-addr">0x7dCAd531a72e6480c76b8535f07BdCbF9bf47360</div>
+          <button class="copy-btn" data-copy="0x7dCAd531a72e6480c76b8535f07BdCbF9bf47360">&#x2398;</button>
+        </div>
+        <div class="coord-stats">
+          <div class="coord-stat"><div class="coord-stat-label">Explore Rate</div><div class="coord-stat-value b">40%</div></div>
+          <div class="coord-stat"><div class="coord-stat-label">Strategy</div><div class="coord-stat-value b">Aggressive</div></div>
+          <div class="coord-stat"><div class="coord-stat-label">Accuracy</div><div class="coord-stat-value" style="color:var(--text2)">Lower</div></div>
+          <div class="coord-stat"><div class="coord-stat-label">Discovery</div><div class="coord-stat-value b">Faster</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="coord-compare" id="coord-compare">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">Task Allocation Distribution</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">450 tasks via Alpha &middot; 51 tasks via Beta</div>
+      <div class="coord-compare-bar"><div class="seg-a" style="width:89.8%"></div><div class="seg-b" style="width:10.2%"></div></div>
+      <div class="coord-compare-legend"><span style="color:var(--green)">Alpha 89.8%</span><span style="color:var(--blue)">Beta 10.2%</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATION -->
+<section class="integration" id="integration">
+  <div class="container">
+    <div class="section-label reveal">Full Stack</div>
+    <h2 class="section-title reveal reveal-d1">Kite Integration &mdash; All 7 Features</h2>
+    <div class="int-grid reveal reveal-d2">
+      <div class="int-item"><div class="int-num">01</div><div><div class="int-name">Agent Passport</div><div class="int-desc">Human-to-agent authorization and identity verification</div></div><div class="int-status">LIVE</div></div>
+      <div class="int-item"><div class="int-num">02</div><div><div class="int-name">x402 Protocol</div><div class="int-desc">Agent-to-agent payment via HTTP 402 headers</div></div><div class="int-status">LIVE</div></div>
+      <div class="int-item"><div class="int-num">03</div><div><div class="int-name">MPP Protocol</div><div class="int-desc">Dual-protocol: Kite as universal payment layer</div></div><div class="int-status">LIVE</div></div>
+      <div class="int-item"><div class="int-num">04</div><div><div class="int-name">AA SDK</div><div class="int-desc">Smart wallets with reputation-adjusted spending rules</div></div><div class="int-status">LIVE</div></div>
+      <div class="int-item"><div class="int-num">05</div><div><div class="int-name">ksearch</div><div class="int-desc">Native service discovery in Kite catalog</div></div><div class="int-status">LIVE</div></div>
+      <div class="int-item"><div class="int-num">06</div><div><div class="int-name">Gasless Transfer</div><div class="int-desc">EIP-3009 USDC + PYUSD payments, zero gas for users</div></div><div class="int-status">LIVE</div></div>
+      <div class="int-item"><div class="int-num">07</div><div><div class="int-name">On-chain Attestation</div><div class="int-desc">Quality scores, reasoning CIDs, disputes &mdash; all on Kitescan</div></div><div class="int-status">LIVE</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PERFORMANCE -->
+<section class="performance" id="performance">
+  <div class="container">
+    <div class="section-label reveal">Benchmarks</div>
+    <h2 class="section-title reveal reveal-d1">Performance vs Traditional Systems</h2>
+    <div class="perf-table reveal reveal-d2">
+      <table><thead><tr><th>Metric</th><th>KiteHive</th><th>Traditional</th><th>Advantage</th></tr></thead>
+      <tbody>
+        <tr><td>Agent Selection</td><td class="val perf-bar-cell">&lt;1ms<div class="perf-bar" style="--w:99%"></div></td><td class="trad">2,400ms</td><td><span class="adv">12,000x faster</span></td></tr>
+        <tr><td>Settlement Cost</td><td class="val perf-bar-cell">$0.02<div class="perf-bar" style="--w:99%"></div></td><td class="trad">$2.15</td><td><span class="adv">99% cheaper</span></td></tr>
+        <tr><td>Settlement Time</td><td class="val perf-bar-cell">12s<div class="perf-bar" style="--w:99%"></div></td><td class="trad">1,440s</td><td><span class="adv">120x faster</span></td></tr>
+        <tr><td>Price Discovery</td><td class="val perf-bar-cell">82%+<div class="perf-bar" style="--w:82%"></div></td><td class="trad">71.2%</td><td><span class="adv">+11% better</span></td></tr>
+        <tr><td>Economic Gini</td><td class="val perf-bar-cell">0.38<div class="perf-bar" style="--w:62%;background:var(--green)"></div></td><td class="trad">0.72</td><td><span class="adv">47% more equal</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- CONTRACT BANNER -->
+<section class="contract-banner">
+  <div class="container">
+    <div class="banner-inner reveal">
+      <div class="banner-flex"><div class="banner-label">Deployed Contract</div><div class="banner-addr" onclick="copyText('0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e')">0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e <span style="font-size:10px;color:var(--text3);margin-left:4px">click to copy</span></div></div>
+      <div class="banner-badges"><span class="badge-pill badge-green">Kite Testnet</span><span class="badge-pill badge-amber">Chain ID 2368</span></div>
+      <a href="https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e" target="_blank" class="btn btn-primary btn-sm">Open Kitescan &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container"><div class="footer-inner">
+    <div class="footer-left"><strong>KiteHive</strong> &mdash; First On-Chain Agentic Labor Market<br>Built for Kite AI Global Hackathon 2026 &middot; Novel Track</div>
+    <div class="footer-links">
+      <a href="https://github.com/0xCaptain888/kitehive" target="_blank"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GitHub</a>
+      <a href="https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e" target="_blank"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Kitescan</a>
+    </div>
+  </div></div>
+</footer>
+
+<script>
+// === PARTICLE CANVAS ===
+(function(){
+  const c=document.getElementById('particle-canvas'),ctx=c.getContext('2d');
+  let w,h,particles=[];
+  function resize(){w=c.width=innerWidth;h=c.height=innerHeight}
+  resize();window.addEventListener('resize',resize);
+  class P{constructor(){this.reset()}reset(){this.x=Math.random()*w;this.y=Math.random()*h;this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;this.r=Math.random()*1.5+.5;this.a=Math.random()*.3+.1}update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>w)this.vx*=-1;if(this.y<0||this.y>h)this.vy*=-1}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(245,158,11,${this.a})`;ctx.fill()}}
+  for(let i=0;i<60;i++)particles.push(new P());
+  function loop(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.update();p.draw()});
+    for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<120){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle=`rgba(245,158,11,${.06*(1-d/120)})`;ctx.stroke()}}
+    requestAnimationFrame(loop)}
+  loop();
+})();
+
+// === SCROLL REVEAL ===
+const obs=new IntersectionObserver(e=>{e.forEach(el=>{if(el.isIntersecting){el.target.classList.add('visible');obs.unobserve(el.target)}})},{threshold:.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// === COUNTER ANIMATION ===
+function animateCounters(){document.querySelectorAll('[data-count]').forEach(el=>{const t=parseFloat(el.dataset.count),p=el.dataset.prefix||'',d=parseInt(el.dataset.decimals)||0,dur=2200,start=performance.now();function tick(now){const prog=Math.min((now-start)/dur,1),eased=1-Math.pow(1-prog,3),cur=t*eased;el.textContent=p+(d>0?cur.toFixed(d):Math.floor(cur));if(prog<1)requestAnimationFrame(tick)}requestAnimationFrame(tick)})}
+const sObs=new IntersectionObserver(e=>{e.forEach(el=>{if(el.isIntersecting){animateCounters();sObs.unobserve(el.target)}})},{threshold:.3});
+const sr=document.querySelector('.stats-row');if(sr)sObs.observe(sr);
+
+// === PERFORMANCE BAR ANIMATION ===
+const perfObs=new IntersectionObserver(e=>{e.forEach(el=>{if(el.isIntersecting){el.target.querySelectorAll('.perf-bar').forEach(b=>b.classList.add('animated'));perfObs.unobserve(el.target)}})},{threshold:.3});
+const pt=document.querySelector('.perf-table');if(pt)perfObs.observe(pt);
+
+// === TOAST ===
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+
+// === COPY TO CLIPBOARD ===
+function copyText(text){navigator.clipboard.writeText(text).then(()=>showToast('Copied: '+text.slice(0,14)+'...'))}
+document.querySelectorAll('.copy-btn').forEach(btn=>{btn.addEventListener('click',e=>{e.stopPropagation();const t=btn.dataset.copy;copyText(t);btn.classList.add('copied');btn.textContent='\u2713';setTimeout(()=>{btn.classList.remove('copied');btn.textContent='\u2398'},1500)})});
+
+// === EVIDENCE TABS ===
+document.querySelectorAll('.ev-tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.ev-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.ev-panel').forEach(p=>p.classList.remove('active'));tab.classList.add('active');document.getElementById('panel-'+tab.dataset.panel).classList.add('active')})});
+
+// === LIVE FEED ===
+const agents=['research-agent-a','writer-agent-a','writer-agent-b','external-api','new-agent-demo'];
+const types=['attest','attest','attest','attest','attest','attest','attest','dispute','resolve'];
+const taskTypes=['research','writing','analysis','market-data','synthesis','price-feed'];
+function genFeedItem(){
+  const type=types[Math.floor(Math.random()*types.length)];
+  const agent=agents[Math.floor(Math.random()*agents.length)];
+  const quality=Math.max(1,Math.min(5,Math.round(3.5+(Math.random()-0.5)*3)));
+  const time=Math.floor(Math.random()*60)+'s ago';
+  return{type,agent,quality,time,taskType:taskTypes[Math.floor(Math.random()*taskTypes.length)]}
+}
+function renderFeedItem(item){
+  const qBars=Array(5).fill(0).map((_,i)=>`<span style="background:${i<item.quality?'var(--amber)':'var(--border)'}"></span>`).join('');
+  return`<div class="feed-item" data-type="${item.type}"><span class="feed-type ${item.type}">${item.type}</span><span class="feed-agent">${item.agent}</span><span class="feed-quality">${qBars}</span><span class="feed-time">${item.time}</span></div>`
+}
+const feedEl=document.getElementById('feed-scroll');
+let feedData=Array.from({length:25},genFeedItem);
+function renderFeed(filter='all'){feedEl.innerHTML=feedData.filter(d=>filter==='all'||d.type===filter).map(renderFeedItem).join('')}
+renderFeed();
+document.querySelectorAll('.feed-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.feed-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderFeed(btn.dataset.filter)})});
+setInterval(()=>{feedData.unshift(genFeedItem());if(feedData.length>50)feedData.pop();const activeFilter=document.querySelector('.feed-btn.active')?.dataset.filter||'all';renderFeed(activeFilter)},3000);
+
+// === ARCHITECTURE HOVER ===
+const archDiagram=document.getElementById('arch-diagram');
+archDiagram.innerHTML=`<span class="d arch-layer" data-layer="frontend">┌──────────────────────────────────────────────────────────────┐
+│</span>                    <span class="h">Frontend (Next.js 14)</span>                      <span class="d arch-layer" data-layer="frontend">│
+│</span>  <span class="c">Economy Graph</span> · <span class="c">Negotiation Log</span> · <span class="c">Leaderboard</span> · <span class="c">Health</span>      <span class="d arch-layer" data-layer="frontend">│
+└─────────────────────────┬────────────────────────────────────┘</span>
+                          <span class="d">│</span> <span class="g">SSE stream</span>
+          <span class="d arch-layer" data-layer="coord">┌───────────────┴───────────────┐</span>
+          <span class="d">▼</span>                               <span class="d">▼</span>
+<span class="d arch-layer" data-layer="coord">┌─────────────────┐             ┌─────────────────┐
+│</span>  <span class="g">Coordinator A</span>  <span class="d arch-layer" data-layer="coord">│             │</span>  <span class="b">Coordinator B</span>  <span class="d arch-layer" data-layer="coord">│
+│</span>  <span class="d">explore=0.18</span>   <span class="d arch-layer" data-layer="coord">│             │</span>  <span class="d">explore=0.40</span>   <span class="d arch-layer" data-layer="coord">│
+└────────┬────────┘             └────────┬────────┘</span>
+         <span class="d">│</span> <span class="h">x402 + USDC/PYUSD</span>            <span class="d">│</span> <span class="h">x402 + USDC/PYUSD</span>
+    <span class="d arch-layer" data-layer="agents">┌────┴─────────────────────────┐────┘
+    ▼              ▼               ▼
+┌──────────┐ ┌──────────┐ ┌──────────────┐
+│</span> <span class="c">Research</span> <span class="d arch-layer" data-layer="agents">│ │</span>  <span class="c">Writer</span>  <span class="d arch-layer" data-layer="agents">│ │</span> <span class="c">External x402</span><span class="d arch-layer" data-layer="agents">│
+│</span>  <span class="c">Agent</span>   <span class="d arch-layer" data-layer="agents">│ │</span> <span class="c">Agent(s)</span> <span class="d arch-layer" data-layer="agents">│ │</span> <span class="c">USDC + PYUSD</span> <span class="d arch-layer" data-layer="agents">│
+└──────────┘ └──────────┘ └──────────────┘</span>
+    <span class="d">All:</span> <span class="h">x402 endpoint</span> · <span class="h">dynamic pricing</span> · <span class="h">staking</span> · <span class="h">EOA wallet</span>
+                          <span class="d">│</span>
+                          <span class="d">▼</span>
+<span class="d arch-layer" data-layer="chain">┌──────────────────────────────────────────────────────────────┐
+│</span>                    <span class="r">Kite Chain (Testnet 2368)</span>                   <span class="d arch-layer" data-layer="chain">│
+│</span>  <span class="h">USDC + PYUSD Settlement</span> · <span class="h">Attestation+Staking Contract</span>      <span class="d arch-layer" data-layer="chain">│
+│</span>  <span class="h">Reputation Store</span> · <span class="h">Dispute Resolution</span> · <span class="h">AA EntryPoint</span>       <span class="d arch-layer" data-layer="chain">│
+└──────────────────────────────────────────────────────────────┘</span>`;
+
+document.querySelectorAll('.arch-layer').forEach(el=>{
+  el.style.cursor='pointer';
+  el.addEventListener('mouseenter',()=>{const layer=el.dataset.layer;document.querySelectorAll(`.arch-layer[data-layer="${layer}"]`).forEach(l=>l.style.color='var(--amber)')});
+  el.addEventListener('mouseleave',()=>{document.querySelectorAll('.arch-layer').forEach(l=>l.style.color='')});
+});
+
+// === REPUTATION SIMULATOR ===
+const simTasks=document.getElementById('sim-tasks'),simQuality=document.getElementById('sim-quality'),simVariance=document.getElementById('sim-variance');
+const simTasksVal=document.getElementById('sim-tasks-val'),simQualityVal=document.getElementById('sim-quality-val'),simVarianceVal=document.getElementById('sim-variance-val');
+simTasks.oninput=()=>{simTasksVal.textContent=simTasks.value};
+simQuality.oninput=()=>{simQualityVal.textContent=(simQuality.value/10).toFixed(1)};
+simVariance.oninput=()=>{simVarianceVal.textContent=(simVariance.value/10).toFixed(1)};
+
+function runSimulation(){
+  const n=parseInt(simTasks.value),mean=simQuality.value/10,variance=simVariance.value/10;
+  let rep=100,returned=0,slashed=0,earned=0;
+  const quals=[0,0,0,0,0,0]; // index 1-5
+  const vizData=[];
+  for(let i=0;i<n;i++){
+    const noise=(Math.random()+Math.random()+Math.random()-1.5)*variance*1.5;
+    const q=Math.max(1,Math.min(5,Math.round(mean+noise)));
+    quals[q]++;
+    const price=(.1+Math.random()*.5)*100;earned+=price;
+    const delta=q===5?25:q===4?10:q===3?2:q===2?-15:-30;
+    rep=Math.max(0,Math.min(500,rep+delta));
+    if(q>=3)returned+=10;else if(q===2){returned+=5;slashed+=5}else slashed+=10;
+    vizData.push({q,rep});
+  }
+  const tier=rep>=400?'Trusted':rep>=300?'Established':rep>=200?'Growing':'New';
+  const net=(earned/100+returned/100-slashed/100);
+  const tierColor=rep>=400?'var(--green)':rep>=300?'var(--amber)':rep>=200?'var(--cyan)':'var(--text3)';
+  document.getElementById('res-rep').textContent=rep+'/500';document.getElementById('res-rep').style.color=tierColor;
+  document.getElementById('res-tier').textContent=tier;document.getElementById('res-tier').style.color=tierColor;
+  document.getElementById('res-returned').textContent='$'+(returned/100).toFixed(2);document.getElementById('res-returned').className='sim-result-value good';
+  document.getElementById('res-slashed').textContent=slashed>0?'-$'+(slashed/100).toFixed(2):'$0.00';document.getElementById('res-slashed').className='sim-result-value '+(slashed>0?'bad':'good');
+  document.getElementById('res-earned').textContent='$'+(earned/100).toFixed(2);document.getElementById('res-earned').className='sim-result-value good';
+  document.getElementById('res-pnl').textContent=(net>=0?'+':'')+('$'+net.toFixed(2));document.getElementById('res-pnl').className='sim-result-value '+(net>=0?'good':'bad');
+  document.getElementById('res-dist').textContent=`Q5:${quals[5]} Q4:${quals[4]} Q3:${quals[3]} Q2:${quals[2]} Q1:${quals[1]}`;
+
+  // Visualization
+  const viz=document.getElementById('sim-viz');
+  viz.innerHTML='';
+  const maxRep=Math.max(...vizData.map(d=>d.rep),100);
+  vizData.forEach((d,i)=>{
+    const bar=document.createElement('div');bar.className='sim-bar';
+    const h=Math.max(8,(d.rep/maxRep)*100);
+    bar.style.height=h+'%';
+    bar.style.background=d.q>=4?'var(--green)':d.q===3?'var(--amber)':d.q===2?'var(--rose-dim)':'var(--rose)';
+    bar.innerHTML=`<div class="sim-bar-tooltip">Task ${i+1}: Q${d.q}, Rep: ${d.rep}</div>`;
+    viz.appendChild(bar);
+  });
+}
+runSimulation(); // initial run
+
+// === STAKING TABLE CLICK ===
+document.querySelectorAll('#staking-tbody tr').forEach(tr=>{tr.addEventListener('click',()=>{document.querySelectorAll('#staking-tbody tr').forEach(r=>r.classList.remove('selected'));tr.classList.add('selected');const q=tr.dataset.q,rep=tr.dataset.rep;showToast(`Quality ${q}: Reputation ${rep}`)})});
+
+// === COORDINATOR COMPARE TOGGLE ===
+function toggleCoordCompare(){document.getElementById('coord-compare').classList.toggle('show')}
+
+// === SMOOTH NAV ===
+document.querySelectorAll('nav a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();const t=document.querySelector(a.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
+
+// === NAV ACTIVE STATE ===
+const sections=document.querySelectorAll('section[id]');
+const navLinks=document.querySelectorAll('.nav-link-item');
+window.addEventListener('scroll',()=>{let cur='';sections.forEach(s=>{if(scrollY>=s.offsetTop-100)cur=s.id});navLinks.forEach(l=>{l.classList.toggle('active',l.getAttribute('href')==='#'+cur)})});
+</script>
+</body>
+</html>

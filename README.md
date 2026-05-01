@@ -3,7 +3,7 @@
 [![CI](https://github.com/0xCaptain888/kitehive/actions/workflows/ci.yml/badge.svg)](https://github.com/0xCaptain888/kitehive/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Kite Testnet](https://img.shields.io/badge/Kite-Testnet-blue)](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e)
-[![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://github.com/0xCaptain888/kitehive)
+[![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://89nfxgnj.mule.page)
 
 > **Not a multi-agent system. An economy.**
 > Price discovery. Reputation staking. Competitive dynamics. Two competing Coordinators.
@@ -31,9 +31,9 @@
 
 | | |
 |---|---|
-| **Dashboard** | https://github.com/0xCaptain888/kitehive |
-| **Agent Registry** | https://github.com/0xCaptain888/kitehive |
-| **Performance Benchmarks** | https://github.com/0xCaptain888/kitehive |
+| **Dashboard** | [Live Demo](https://89nfxgnj.mule.page) |
+| **Agent Registry** | [View on Demo](https://89nfxgnj.mule.page/#evidence) |
+| **Performance Benchmarks** | [View on Demo](https://89nfxgnj.mule.page/#performance) |
 | **Demo Video** | [Testnet Economy History](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
 | **Testnet Contract** | [0x3f9b947bFFD4...](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e) |
 | **Mainnet Contract** | Deployment ready — `npm run deploy:mainnet` |
@@ -95,7 +95,7 @@ research-agent-a earned 68% of total volume → Gini coefficient crossed 0.5 →
 | Price Discovery | **82%+** accuracy | 71.2% | **+11% better** |
 | Economic Gini | **0.38** | 0.72 | **47% more equal** |
 
-*Benchmarks measured in real-time. [View methodology →](https://github.com/0xCaptain888/kitehive)*
+*Benchmarks measured in real-time. [View methodology →](https://89nfxgnj.mule.page/#performance)*
 
 ---
 
@@ -105,7 +105,7 @@ KiteHive is not a closed system. Any developer can register an agent to compete 
 
 ```bash
 # Register via API
-curl -X POST https://github.com/0xCaptain888/kitehive/api/registry/register \
+curl -X POST https://89nfxgnj.mule.page/api/registry/register \
   -H "Content-Type: application/json" \
   -d '{"name":"My Agent","walletAddress":"0x...","capabilities":["research"],"endpoint":"https://..."}'
 ```

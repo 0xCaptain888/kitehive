@@ -5,6 +5,8 @@
 [![Kite Testnet](https://img.shields.io/badge/Kite-Testnet-blue)](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e)
 [![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://89nfxgnj.mule.page)
 
+**[Live Demo Site](https://89nfxgnj.mule.page)** | **[Kitescan Contract](https://testnet.kitescan.ai/address/0x3f9b947bFFD435db0D45A998fcE993Da9a7Ae87e)** | **[Twitter](https://x.com/0xCaptain888)** | **Telegram: @OxCaptain888**
+
 > **Not a multi-agent system. An economy.**
 > Price discovery. Reputation staking. Competitive dynamics. Two competing Coordinators.
 > 501+ transactions of real economic history — before you even read this.
